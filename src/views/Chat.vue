@@ -3,25 +3,92 @@ export default {
   name: 'Chat',
   data() {
     return {
-      message: '',
-      messages: [] // 存储用户消息的数组
+      userMessage: '',
+      conversation: [], // 存储用户消息的数组
+      currentAssistantMessage: '',
+      websocket: null //  websocket连接
+    }
+  },
+  created() {
+    //  读取localStorage 中的缓存消息
+    this.loadMessages()
+    //  组件被创建后，建立 WebSocket 连接
+    this.websocket = new WebSocket('ws://localhost:8088/ws')
+    this.websocket.onmessage = (event) => {
+      if (event.data === '[DONE]') {
+        // 重置累积的消息
+        this.saveMessages()
+        this.currentAssistantMessage = ''
+        return
+      } else {
+        // 实时更新累积的消息
+        this.currentAssistantMessage += event.data
+        // 然后更新到对话中以实时渲染
+        // 检查对话数组中最后一条消息是否属于助手且未完成
+        if (
+          this.conversation.length > 0 &&
+          this.conversation[this.conversation.length - 1].by === 'assistant' &&
+          !this.conversation[this.conversation.length - 1].done
+        ) {
+          // 更新最后一条消息的文本
+          this.conversation[this.conversation.length - 1].text = this.currentAssistantMessage
+        } else {
+          // 否则，添加一个新的消息条目
+          this.conversation.push({
+            text: this.currentAssistantMessage,
+            by: 'assistant',
+            done: false
+          })
+        }
+      }
+      // 由于数组中对象的属性发生了变化，确保更新视图
+      this.conversation = [...this.conversation]
+    }
+    this.websocket.onopen = () => {
+      console.log('Connected to the WebSocket server')
+    }
+    this.websocket.onerror = (error) => {
+      console.error('WebSocket Error:', error)
     }
   },
   methods: {
+    loadMessages() {
+      //  从 localStorage 读取消息记录
+      const messages = localStorage.getItem('conversation')
+      if (messages !== null) {
+        this.conversation = JSON.parse(messages)
+      }
+    },
+    saveMessages() {
+      //  将conversation数组存储到localStorage
+      localStorage.setItem('conversation', JSON.stringify(this.conversation))
+    },
     sendMessage() {
-      const trimmedMessage = this.message.trim()
-      if (trimmedMessage) {
-        const timestamp = new Date() //  获取当前时间戳
-        this.messages.push({
+      const trimmedMessage = this.userMessage.trim()
+      if (trimmedMessage && this.websocket.readyState == WebSocket.OPEN) {
+        this.websocket.send(trimmedMessage) //  发送消息到服务器
+        // 保存用户发送的消息
+        this.conversation.push({
           text: trimmedMessage,
-          time: timestamp
-        }) // 添加消息到数组
-        console.log(`发送消息: ${trimmedMessage} at ${timestamp}`)
-        this.message = ''
+          time: new Date(),
+          by: 'user',
+          done: true // 标记为完成
+        })
+        this.userMessage = ''
       }
     },
     formatTime(date) {
+      if (!(date instanceof Date)) {
+        date = new Date(date)
+      }
+      //  格式化时间戳
       return date.toLocaleTimeString()
+    }
+  },
+  beforeUnmount() {
+    //  组件被销毁前关闭 WebSocket 连接
+    if (this.websocket) {
+      this.websocket.close()
     }
   }
 }
@@ -30,15 +97,13 @@ export default {
 <template>
   <div class="chat-container">
     <!-- 打招呼的文本 -->
-    <div class="greeting" v-if="!messages.length">你好！有什么可以帮助你的吗？</div>
+    <div class="greeting" v-if="!conversation.length">你好！有什么可以帮助你的吗？</div>
 
-    <!-- 消息列表的占位符 -->
     <div class="messages">
-      <div class="message-container right" v-for="(msg, index) in messages" :key="index">
-        <div class="message">{{ msg.text }}</div>
-        <div class="timestamp">
-          {{ formatTime(msg.time) }}
-        </div>
+      <!-- 渲染整个对话 -->
+      <div v-for="(msg, index) in conversation" :key="index" :class="['message', msg.by]">
+        <div>{{ msg.text }}</div>
+        <div class="timestamp" v-if="msg.by === 'user'">{{ formatTime(msg.time) }}</div>
       </div>
     </div>
 
@@ -46,11 +111,11 @@ export default {
     <div class="input-area">
       <textarea
         type="text"
-        v-model="message"
+        v-model="userMessage"
         placeholder="请输入文本"
         @keyup.enter.exact="sendMessage"
       ></textarea>
-      <button :disabled="!message.trim()" @click="sendMessage" class="send-button">
+      <button :disabled="!userMessage.trim()" @click="sendMessage" class="send-button">
         <i class="fas fa-paper-plane"></i>
       </button>
     </div>
@@ -62,8 +127,8 @@ export default {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #121212; /* 背景色与页面背景一致 */
-  justify-content: space-between; /* 子元素之间的间隔均匀分布 */
+  background: #121212;
+  justify-content: space-between;
 }
 
 .greeting {
@@ -72,24 +137,59 @@ export default {
   font-size: 30px;
 }
 
+.messages {
+  display: flex;
+  flex-direction: column-reverse;
+  overflow-y: auto;
+  margin: 0 10px;
+}
+
+.message {
+  margin: 5px;
+  padding: 10px 15px;
+  border-radius: 12px;
+  color: white;
+  word-wrap: break-word;
+}
+
+.assistant {
+  max-width: 50%;
+  align-self: flex-start;
+  background-color: #007bff;
+}
+
+.user {
+  max-width: 50%;
+  align-self: flex-end;
+  background-color: #28a745;
+}
+
+.timestamp {
+  color: #cccccc;
+  font-size: 0.75rem;
+  text-align: right; /* 时间戳右对齐 */
+  padding-right: 15px; /* 与消息文本右侧对齐，根据需要调整 */
+  margin-top: 2px; /* 时间戳与消息文本的间距，根据需要调整 */
+}
+
 .input-area {
   display: flex;
-  justify-content: center; /* 水平居中 */
-  align-items: center; /* 垂直居中 */
-  padding-bottom: 20px; /* 底部留出一些空间 */
+  justify-content: center;
+  align-items: center;
+  padding-bottom: 20px;
 }
 
 .input-area textarea {
-  width: 750px; /* 输入框宽度保持不变 */
-  min-height: 50px; /* 最小高度 */
-  max-height: 220px; /* 最大高度 */
-  margin-right: 10px; /* 输入框与发送按钮的距离 */
+  width: 750px;
+  min-height: 50px;
+  max-height: 220px;
+  margin-right: 10px;
   padding: 10px;
   border: 1px solid #ccc;
   border-radius: 4px;
   background: #fff;
-  resize: none; /* 禁止调整大小 */
-  overflow-y: auto; /* 允许垂直滚动 */
+  resize: none;
+  overflow-y: auto;
 }
 
 .input-area button.send-button {
@@ -108,41 +208,6 @@ export default {
 .input-area .fa-paper-plane {
   color: #28a745; /* 图标颜色 */
   font-size: 24px; /* 图标大小 */
-}
-
-.message-container {
-  display: flex;
-  flex-direction: column; /* 设置flex方向为列，使得时间戳在消息框下面 */
-  align-items: flex-end; /* 保持子元素向右对齐 */
-  max-width: calc(750px - 30px); /* 与输入框宽度一致 */
-  margin-top: 5px;
-  margin-bottom: 5px;
-}
-
-.message {
-  background-color: #007bff;
-  color: white;
-  border-radius: 12px;
-  padding: 10px 15px;
-  max-width: 100%; /* 设置消息框最大宽度为容器宽度 */
-  word-wrap: break-word; /* 防止消息过长时溢出 */
-}
-
-.timestamp {
-  color: #cccccc;
-  font-size: 0.75rem;
-  text-align: right; /* 时间戳右对齐 */
-  padding-right: 15px; /* 与消息文本右侧对齐，根据需要调整 */
-  margin-top: 2px; /* 时间戳与消息文本的间距，根据需要调整 */
-}
-
-.messages {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end; /* 保证消息容器在右侧 */
-  overflow-y: auto;
-  margin: 0 10px 10px 10px;
-  padding-right: 20px;
 }
 
 .input-area button.button-disabled {
