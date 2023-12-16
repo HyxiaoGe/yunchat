@@ -6,12 +6,14 @@ export default {
       userMessage: '',
       conversation: [], // 存储用户消息的数组
       currentAssistantMessage: '',
-      websocket: null //  websocket连接
+      websocket: null, //  websocket连接
+      showScrollButton: false
     }
   },
   created() {
     //  读取localStorage 中的缓存消息
     this.loadMessages()
+    this.scrollToBottom()
     //  组件被创建后，建立 WebSocket 连接
     this.websocket = new WebSocket('ws://localhost:8088/ws')
     this.websocket.onmessage = (event) => {
@@ -27,22 +29,23 @@ export default {
         // 检查对话数组中最后一条消息是否属于助手且未完成
         if (
           this.conversation.length > 0 &&
-          this.conversation[this.conversation.length - 1].by === 'assistant' &&
+          this.conversation[this.conversation.length - 1].role === 'assistant' &&
           !this.conversation[this.conversation.length - 1].done
         ) {
           // 更新最后一条消息的文本
-          this.conversation[this.conversation.length - 1].text = this.currentAssistantMessage
+          this.conversation[this.conversation.length - 1].content = this.currentAssistantMessage
         } else {
           // 否则，添加一个新的消息条目
           this.conversation.push({
-            text: this.currentAssistantMessage,
-            by: 'assistant',
+            content: this.currentAssistantMessage,
+            role: 'assistant',
             done: false
           })
         }
       }
       // 由于数组中对象的属性发生了变化，确保更新视图
       this.conversation = [...this.conversation]
+      this.scrollToBottom()
     }
     this.websocket.onopen = () => {
       console.log('Connected to the WebSocket server')
@@ -50,6 +53,13 @@ export default {
     this.websocket.onerror = (error) => {
       console.error('WebSocket Error:', error)
     }
+  },
+  mounted() {
+    // When the component is mounted, we add the scroll listener.
+    const messagesContainer = this.$refs.messagesContainer
+    messagesContainer.addEventListener('scroll', this.onScroll)
+    // We also scroll to the bottom when the component is first mounted.
+    this.scrollToBottom()
   },
   methods: {
     loadMessages() {
@@ -63,18 +73,46 @@ export default {
       //  将conversation数组存储到localStorage
       localStorage.setItem('conversation', JSON.stringify(this.conversation))
     },
+    onScroll() {
+      // This method checks if the user has scrolled away from the bottom.
+      const messagesContainer = this.$refs.messagesContainer
+      const nearBottom =
+        messagesContainer.scrollHeight -
+          messagesContainer.scrollTop -
+          messagesContainer.clientHeight <
+        10
+      this.showScrollButton = !nearBottom
+    },
+    scrollToBottom() {
+      // This method scrolls to the bottom of the messages container.
+      this.$nextTick(() => {
+        const messagesContainer = this.$refs.messagesContainer
+        messagesContainer.scrollTop = messagesContainer.scrollHeight
+        // After scrolling, we check if we're at the bottom and potentially hide the button.
+        this.onScroll()
+      })
+    },
     sendMessage() {
       const trimmedMessage = this.userMessage.trim()
       if (trimmedMessage && this.websocket.readyState == WebSocket.OPEN) {
-        this.websocket.send(trimmedMessage) //  发送消息到服务器
         // 保存用户发送的消息
         this.conversation.push({
-          text: trimmedMessage,
+          content: trimmedMessage,
           time: new Date(),
-          by: 'user',
+          role: 'user',
           done: true // 标记为完成
         })
+        //  发送消息到服务器
+        this.websocket.send(
+          JSON.stringify({
+            conversation: this.conversation.map((msg) => ({
+              role: msg.role,
+              content: msg.content
+            }))
+          })
+        )
         this.userMessage = ''
+        this.scrollToBottom()
       }
     },
     formatTime(date) {
@@ -86,6 +124,8 @@ export default {
     }
   },
   beforeUnmount() {
+    const messagesContainer = this.$refs.messagesContainer
+    messagesContainer.removeEventListener('scroll', this.onScroll)
     //  组件被销毁前关闭 WebSocket 连接
     if (this.websocket) {
       this.websocket.close()
@@ -99,12 +139,16 @@ export default {
     <!-- 打招呼的文本 -->
     <div class="greeting" v-if="!conversation.length">你好！有什么可以帮助你的吗？</div>
 
-    <div class="messages">
+    <div class="messages" ref="messagesContainer">
       <!-- 渲染整个对话 -->
-      <div v-for="(msg, index) in conversation" :key="index" :class="['message', msg.by]">
-        <div>{{ msg.text }}</div>
-        <div class="timestamp" v-if="msg.by === 'user'">{{ formatTime(msg.time) }}</div>
+      <div v-for="(msg, index) in conversation" :key="index" :class="['message', msg.role]">
+        <div>{{ msg.content }}</div>
+        <div class="timestamp" v-if="msg.role === 'user'">{{ formatTime(msg.time) }}</div>
       </div>
+      <button v-show="showScrollButton" @click="scrollToBottom" class="scroll-to-bottom">
+        <i class="fas fa-arrow-down"></i>
+        <!-- 你可以使用Font Awesome或其他图标库 -->
+      </button>
     </div>
 
     <!-- 输入区 -->
@@ -139,7 +183,7 @@ export default {
 
 .messages {
   display: flex;
-  flex-direction: column-reverse;
+  flex-direction: column;
   overflow-y: auto;
   margin: 0 10px;
 }
@@ -213,5 +257,25 @@ export default {
 .input-area button.button-disabled {
   background-color: #ccc; /* 置灰的按钮背景色 */
   cursor: not-allowed; /* 鼠标悬停时显示禁用的标志 */
+}
+
+.scroll-to-bottom {
+  position: fixed;
+  right: 2em; /* 距离右侧2em */
+  bottom: 2em; /* 距离底部2em */
+  background-color: #28a745; /* 按钮背景颜色 */
+  color: white; /* 图标颜色 */
+  border: none; /* 无边框 */
+  border-radius: 50%; /* 圆形按钮 */
+  padding: 0.5em; /* 内边距 */
+  cursor: pointer; /* 鼠标样式 */
+  display: flex; /* 使用flex布局，方便居中图标 */
+  justify-content: center; /* 水平居中图标 */
+  align-items: center; /* 垂直居中图标 */
+  z-index: 100; /* 确保按钮位于消息列表上方 */
+}
+
+.scroll-to-bottom i {
+  font-size: 1.5em; /* 图标大小 */
 }
 </style>
