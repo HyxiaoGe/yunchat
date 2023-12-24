@@ -172,7 +172,9 @@ export default {
     <div class="messages" ref="messagesContainer">
       <!-- 渲染整个对话 -->
       <div v-for="(msg, index) in conversation" :key="index" :class="['message', msg.role]">
-        <i :class="['icon', msg.role === 'user' ? 'fa-solid fa-user' : 'fa-solid fa-robot']"></i>
+        <i
+          :class="['icon', msg.role === 'user' ? 'fa-solid fa-user-tie' : 'fa-solid fa-robot']"
+        ></i>
         <div class="text">{{ msg.content }}</div>
         <div class="timestamp" v-if="msg.role === 'user'">{{ formatTime(msg.time) }}</div>
       </div>
@@ -215,7 +217,7 @@ export default {
 .messages {
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow-y: hidden;
   margin: 0 10px;
 }
 
@@ -258,6 +260,7 @@ export default {
   order: -1;
   margin-right: 10px;
   font-size: 1.2em;
+  align-self: flex-start;
 }
 
 .timestamp {
