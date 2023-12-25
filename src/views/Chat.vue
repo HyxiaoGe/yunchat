@@ -8,42 +8,61 @@ export default {
       currentAssistantMessage: '',
       verificationKey: '',
       websocket: null, //  websocket连接
+      reconnectAttempts: 0,
+      reconnectInterval: null,
       showScrollButton: false,
       isVerified: false
     }
   },
   created() {
+    this.initializeWebSocket()
     //  读取localStorage 中的缓存消息
     this.loadLocalStorage()
     this.scrollToBottom()
-    //  组件被创建后，建立 WebSocket 连接
-    this.websocket = new WebSocket('ws://localhost:8088/ws')
-    this.websocket.onmessage = this.handleWebSocketMessage.bind(this)
-    this.websocket.onopen = () => {
-      console.log('Connected to the WebSocket server')
-    }
-    this.websocket.onerror = (error) => {
-      console.error('WebSocket Error:', error)
-    }
   },
-  mounted() {
-    const messagesContainer = this.$refs.messagesContainer
-    messagesContainer.addEventListener('scroll', this.onScroll)
-    this.scrollToBottom()
-  },
+
   methods: {
-    loadLocalStorage() {
-      //  从 localStorage 读取消息记录
-      const messages = localStorage.getItem('conversation')
-      if (messages !== null) {
-        this.conversation = JSON.parse(messages)
+    initializeWebSocket() {
+      //  组件被创建后，建立 WebSocket 连接
+      this.websocket = new WebSocket('ws://localhost:8088/ws')
+      this.websocket.onmessage = this.handleWebSocketMessage.bind(this)
+      this.websocket.onopen = () => {
+        console.log('Connected to the WebSocket server')
+        //  重置重连尝试次数
+        this.reconnectAttempts = 0
+        if (this.reconnectInterval) {
+          clearInterval(this.reconnectInterval)
+          this.reconnectInterval = null
+        }
       }
-      // 页面加载时检查 localStorage 中的验证状态
-      this.isVerified = localStorage.getItem('isVerified') === 'true'
+      this.websocket.onerror = (error) => {
+        console.error('WebSocket Error:', error)
+      }
+      this.websocket.onclose = (event) => {
+        console.log('WebSocket is closed now:', event)
+        if (!this.reconnectInterval) {
+          this.reconnectWebSocket()
+        }
+      }
     },
-    saveLocalStorage() {
-      //  将conversation数组存储到localStorage
-      localStorage.setItem('conversation', JSON.stringify(this.conversation))
+    reconnectWebSocket() {
+      const MAX_RECONNECT_ATTEMPTS = 10
+      const RECONNECT_INTERVAL_BASE = 1000
+      const RECONNECT_INTERVAL_MAX = 30000
+
+      if (this.reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+        let reconnectDelay = Math.min(
+          RECONNECT_INTERVAL_BASE * Math.pow(2, this.reconnectAttempts),
+          RECONNECT_INTERVAL_MAX
+        )
+        setTimeout(() => {
+          console.log(`Attempting to reconnect... (Attempt: ${this.reconnectAttempts + 1})`)
+          this.initializeWebSocket()
+        }, reconnectDelay)
+        this.reconnectAttempts++
+      } else {
+        console.error('Max WebSocket reconnect attempts reached.')
+      }
     },
     onScroll() {
       const messagesContainer = this.$refs.messagesContainer
@@ -138,6 +157,19 @@ export default {
       }
       this.websocket.send(JSON.stringify(message))
     },
+    loadLocalStorage() {
+      //  从 localStorage 读取消息记录
+      const messages = localStorage.getItem('conversation')
+      if (messages !== null) {
+        this.conversation = JSON.parse(messages)
+      }
+      // 页面加载时检查 localStorage 中的验证状态
+      this.isVerified = localStorage.getItem('isVerified') === 'true'
+    },
+    saveLocalStorage() {
+      //  将conversation数组存储到localStorage
+      localStorage.setItem('conversation', JSON.stringify(this.conversation))
+    },
     formatTime(date) {
       if (!(date instanceof Date)) {
         date = new Date(date)
@@ -146,12 +178,21 @@ export default {
       return date.toLocaleTimeString()
     }
   },
+  mounted() {
+    const messagesContainer = this.$refs.messagesContainer
+    messagesContainer.addEventListener('scroll', this.onScroll)
+    this.scrollToBottom()
+  },
   beforeUnmount() {
     const messagesContainer = this.$refs.messagesContainer
     messagesContainer.removeEventListener('scroll', this.onScroll)
     //  组件被销毁前关闭 WebSocket 连接
     if (this.websocket) {
       this.websocket.close()
+    }
+    // 清除重连间隔
+    if (this.reconnectInterval) {
+      clearInterval(this.reconnectInterval)
     }
   }
 }
@@ -217,7 +258,7 @@ export default {
 .messages {
   display: flex;
   flex-direction: column;
-  overflow-y: hidden;
+  overflow-y: auto;
   margin: 0 10px;
 }
 
