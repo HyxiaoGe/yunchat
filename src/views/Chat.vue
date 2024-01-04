@@ -94,10 +94,10 @@ export default {
           role: 'user',
           done: true // 标记为完成
         })
-        //  发送消息到服务器
+        //  发送消息到服务器，对话上下文只支持最近5次对话
         const message = {
           action: 'session',
-          conversation: this.conversation.map((msg) => ({
+          conversation: this.conversation.slice(-10).map((msg) => ({
             role: msg.role,
             content: msg.content
           }))
@@ -107,6 +107,7 @@ export default {
         this.scrollToBottom()
       }
     },
+    //  接受后端返回的数据
     handleWebSocketMessage(event) {
       if (event.data === 'success') {
         localStorage.setItem('isVerified', 'true')
