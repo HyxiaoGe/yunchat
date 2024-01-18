@@ -16,6 +16,7 @@ export default {
   },
   created() {
     this.initializeWebSocket()
+    console.log('test')
     //  读取localStorage 中的缓存消息
     this.loadLocalStorage()
     this.scrollToBottom()
