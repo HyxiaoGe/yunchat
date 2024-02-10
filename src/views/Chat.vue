@@ -21,7 +21,7 @@ export default {
     this.loadLocalStorage()
     this.scrollToBottom()
   },
-
+  // test git push
   methods: {
     initializeWebSocket() {
       //  组件被创建后，建立 WebSocket 连接
