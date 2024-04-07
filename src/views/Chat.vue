@@ -1,4 +1,6 @@
 <script>
+import MarkdownIt from 'markdown-it'
+
 export default {
   name: 'Chat',
   data() {
@@ -11,12 +13,12 @@ export default {
       reconnectAttempts: 0,
       reconnectInterval: null,
       showScrollButton: false,
-      isVerified: false
+      isVerified: false,
+      md: new MarkdownIt()
     }
   },
   created() {
     this.initializeWebSocket()
-    console.log('test')
     //  读取localStorage 中的缓存消息
     this.loadLocalStorage()
     this.scrollToBottom()
@@ -24,7 +26,7 @@ export default {
   methods: {
     initializeWebSocket() {
       //  组件被创建后，建立 WebSocket 连接
-      this.websocket = new WebSocket('ws://localhost:8088/ws')
+      this.websocket = new WebSocket('ws://chat.hyxiaoblog.com/ws')
       this.websocket.onmessage = this.handleWebSocketMessage.bind(this)
       this.websocket.onopen = () => {
         console.log('Connected to the WebSocket server')
@@ -106,6 +108,25 @@ export default {
         this.userMessage = ''
         this.scrollToBottom()
       }
+    },
+    clearConversation() {
+      if (confirm('确定要清空聊天记录吗？')) {
+        this.conversation = [] // 清空聊天数组
+        localStorage.removeItem('conversation') // 如果你使用localStorage存储聊天记录的话
+      }
+    },
+    renderMarkdown(content) {
+      if (this.isCodeBlock(content)) {
+        content = content.substring(3, content.length - 3)
+      }
+      return this.md.render(content)
+    },
+    isCodeBlock(content) {
+      console.log('content: ', content)
+      if (typeof content !== 'string') {
+        return false
+      }
+      return content.trim().startsWith('```')
     },
     //  接受后端返回的数据
     handleWebSocketMessage(event) {
@@ -217,7 +238,14 @@ export default {
         <i
           :class="['icon', msg.role === 'user' ? 'fa-solid fa-user-tie' : 'fa-solid fa-robot']"
         ></i>
-        <div class="text">{{ msg.content }}</div>
+        <!-- 代码区-->
+        <div
+          v-if="isCodeBlock(msg.content)"
+          class="code-block"
+          v-html="renderMarkdown(msg.content)"
+        ></div>
+        <!-- 文本区 -->
+        <div v-else class="text" v-html="renderMarkdown(msg.content)"></div>
         <div class="timestamp" v-if="msg.role === 'user'">{{ formatTime(msg.time) }}</div>
       </div>
       <button v-show="showScrollButton" @click="scrollToBottom" class="scroll-to-bottom">
@@ -236,6 +264,10 @@ export default {
         <button :disabled="!userMessage.trim()" @click="sendMessage" class="send-button">
           <i class="fas fa-paper-plane"></i>
         </button>
+        <!-- 清空聊天按钮 -->
+        <button @click="clearConversation" class="clear-conversation">
+          <i class="fas fa-eraser"></i> 清空对话
+        </button>
       </div>
     </div>
   </div>
@@ -248,6 +280,7 @@ export default {
   height: 100vh;
   background: #121212;
   justify-content: space-between;
+  position: relative;
 }
 
 .greeting {
@@ -267,11 +300,22 @@ export default {
   display: flex;
   align-items: center;
   margin: 5px;
-  padding: 10px 15px;
+  padding: 10px;
   border-radius: 12px;
   color: white;
   word-wrap: break-word;
   position: relative;
+  background: #f9f9f9;
+}
+
+.code-block {
+  background: #282c34; /* 暗色背景，代码消息 */
+  color: #abb2bf; /* 浅灰色文本，代码消息 */
+  padding: 10px;
+  border-radius: 5px;
+  margin: 5px 0; /* 上下边距 */
+  font-family: 'Consolas', 'Monaco', 'Andale Mono', 'Ubuntu Mono', monospace;
+  overflow-x: auto; /* 如果代码很长，需要滚动 */
 }
 
 .fa-user {
@@ -346,6 +390,18 @@ export default {
 .input-area button:disabled {
   background-color: #ccc; /* 置灰的按钮背景色 */
   cursor: not-allowed; /* 鼠标悬停时显示禁用的标志 */
+}
+
+.input-area button.clear-conversation {
+  padding: 10px;
+  background-color: transparent; /* 使按钮透明 */
+  border: none;
+  cursor: pointer;
+  color: #fff; /* 或其他颜色 */
+}
+
+.input-area button.clear-conversation:hover {
+  color: #e74c3c; /* 鼠标悬停时的颜色 */
 }
 
 .input-area .fa-paper-plane {
