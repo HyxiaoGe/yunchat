@@ -1,8 +1,12 @@
 <script>
 import MarkdownIt from 'markdown-it'
+import SidebarView from './SidebarView.vue'
 
 export default {
-  name: 'Chat',
+  components: {
+    SidebarView
+  },
+  name: 'ChatView',
   data() {
     return {
       userMessage: '',
@@ -122,7 +126,6 @@ export default {
       return this.md.render(content)
     },
     isCodeBlock(content) {
-      console.log('content: ', content)
       if (typeof content !== 'string') {
         return false
       }
@@ -221,62 +224,71 @@ export default {
 </script>
 
 <template>
-  <div class="chat-container">
-    <!-- 打招呼的文本 -->
-    <div class="greeting" v-if="!conversation.length && isVerified">
-      您好！有什么可以帮助你的吗？
-    </div>
-
-    <!-- 验证输入框 -->
-    <div v-if="!isVerified" class="verification-area">
-      <input v-model="verificationKey" placeholder="请输入密钥进行验证" />
-      <button @click="verifyKey">验证</button>
-    </div>
-    <div class="messages" ref="messagesContainer">
-      <!-- 渲染整个对话 -->
-      <div v-for="(msg, index) in conversation" :key="index" :class="['message', msg.role]">
-        <i
-          :class="['icon', msg.role === 'user' ? 'fa-solid fa-user-tie' : 'fa-solid fa-robot']"
-        ></i>
-        <!-- 代码区-->
-        <div
-          v-if="isCodeBlock(msg.content)"
-          class="code-block"
-          v-html="renderMarkdown(msg.content)"
-        ></div>
-        <!-- 文本区 -->
-        <div v-else class="text" v-html="renderMarkdown(msg.content)"></div>
-        <div class="timestamp" v-if="msg.role === 'user'">{{ formatTime(msg.time) }}</div>
+  <div class="chat-page">
+    <SidebarView />
+    <div class="chat-container">
+      <!-- 打招呼的文本 -->
+      <div class="greeting" v-if="!conversation.length && isVerified">
+        您好！有什么可以帮助你的吗？
       </div>
-      <button v-show="showScrollButton" @click="scrollToBottom" class="scroll-to-bottom">
-        <i class="fas fa-arrow-down"></i>
-      </button>
-    </div>
-    <div v-if="isVerified">
-      <!-- 输入区 -->
-      <div class="input-area">
-        <textarea
-          type="text"
-          v-model="userMessage"
-          placeholder="请输入文本"
-          @keyup.enter.exact="sendMessage"
-        ></textarea>
-        <button :disabled="!userMessage.trim()" @click="sendMessage" class="send-button">
-          <i class="fas fa-paper-plane"></i>
+
+      <!-- 验证输入框 -->
+      <div v-if="!isVerified" class="verification-area">
+        <input v-model="verificationKey" placeholder="请输入密钥进行验证" />
+        <button @click="verifyKey">验证</button>
+      </div>
+      <div class="messages" ref="messagesContainer">
+        <!-- 渲染整个对话 -->
+        <div v-for="(msg, index) in conversation" :key="index" :class="['message', msg.role]">
+          <i
+            :class="['icon', msg.role === 'user' ? 'fa-solid fa-user-tie' : 'fa-solid fa-robot']"
+          ></i>
+          <!-- 代码区-->
+          <div
+            v-if="isCodeBlock(msg.content)"
+            class="code-block"
+            v-html="renderMarkdown(msg.content)"
+          ></div>
+          <!-- 文本区 -->
+          <div v-else class="text" v-html="renderMarkdown(msg.content)"></div>
+          <div class="timestamp" v-if="msg.role === 'user'">{{ formatTime(msg.time) }}</div>
+        </div>
+        <button v-show="showScrollButton" @click="scrollToBottom" class="scroll-to-bottom">
+          <i class="fas fa-arrow-down"></i>
         </button>
-        <!-- 清空聊天按钮 -->
-        <button @click="clearConversation" class="clear-conversation">
-          <i class="fas fa-eraser"></i> 清空对话
-        </button>
+      </div>
+      <div v-if="isVerified">
+        <!-- 输入区 -->
+        <div class="input-area">
+          <textarea
+            type="text"
+            v-model="userMessage"
+            placeholder="请输入文本"
+            @keyup.enter.exact="sendMessage"
+          ></textarea>
+          <button :disabled="!userMessage.trim()" @click="sendMessage" class="send-button">
+            <i class="fas fa-paper-plane"></i>
+          </button>
+          <!-- 清空聊天按钮 -->
+          <button @click="clearConversation" class="clear-conversation">
+            <i class="fas fa-eraser"></i> 清空对话
+          </button>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+.chat-page {
+  display: flex;
+  height: 100vh;
+}
 .chat-container {
   display: flex;
   flex-direction: column;
+  flex-grow: 1;
+  width: 80%;
   height: 100vh;
   background: #121212;
   justify-content: space-between;

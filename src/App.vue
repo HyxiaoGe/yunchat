@@ -1,13 +1,20 @@
-<script setup>
-import Chat from './views/Chat.vue'
-</script>
+<script setup></script>
 
 <template>
-  <header>
-    <div>
-      <Chat></Chat>
-    </div>
-  </header>
+  <div id="nav">
+    <router-link to="/"></router-link>
+    <router-link to="/chat"></router-link>
+    <router-link to="/draw"></router-link>
+    <router-link to="/video"></router-link>
+    <router-link to="/about"></router-link>
+  </div>
+  <router-view />
 </template>
 
-<style scoped></style>
+<style scoped>
+#nav {
+  display: flex;
+  justify-content: space-around; /* 或者其他布局方式 */
+  /* ...其他样式... */
+}
+</style>
