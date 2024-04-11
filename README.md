@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 # XiaoHub
+=======
+# Xiaohub
+>>>>>>> 9266ca47115c0c9f7c347d35f12c38425f0e44e3
 
 This template should help get you started developing with Vue 3 in Vite.
 
