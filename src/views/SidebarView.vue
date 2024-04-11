@@ -129,6 +129,8 @@ export default {
 .session-list li.active {
   background-color: #34495e; /* 选中项的背景颜色 */
   color: white; /* 选中项的文字颜色 */
+  border-left: 4px solid #4caf50;
+  padding-left: 16px;
 }
 
 .add-session {
