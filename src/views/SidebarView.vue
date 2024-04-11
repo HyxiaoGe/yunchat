@@ -18,7 +18,11 @@
           :class="{ active: session.id === activeSessionId }"
         >
           {{ session.name }}
-          <span v-if="session.id !== 1" class="delete-icon" @click="deleteSession(session.id)">
+          <span
+            v-if="session.id !== 1"
+            class="delete-icon"
+            @click="deleteSession(session.id, $event)"
+          >
             <i class="fa-solid fa-trash-can"></i>
           </span>
         </li>
@@ -52,7 +56,8 @@ export default {
     addSession() {
       this.$emit('add-new-session')
     },
-    deleteSession(sessionId) {
+    deleteSession(sessionId, event) {
+      event.stopPropagation()
       if (window.confirm('确定要删除这个会话吗？')) {
         this.$emit('delete-session', sessionId)
       }
@@ -108,6 +113,7 @@ export default {
   padding: 0;
 }
 .session-list li {
+  cursor: pointer;
   padding: 10px 20px;
   border-bottom: 1px solid #34495e;
   transition:
@@ -117,6 +123,12 @@ export default {
 .session-list li:hover {
   background-color: #34495e; /* 鼠标悬停时的背景色 */
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* 添加轮廓阴影效果 */
+}
+
+/* 设置选中会话的样式 */
+.session-list li.active {
+  background-color: #34495e; /* 选中项的背景颜色 */
+  color: white; /* 选中项的文字颜色 */
 }
 
 .add-session {

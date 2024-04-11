@@ -26,27 +26,12 @@ export default {
   },
   created() {
     this.isVerified = localStorage.getItem('isVerified') === 'true'
+    this.loadActiveSession()
     this.loadSessionsFromLocalStorage()
     this.initializeWebSocket()
-    //  读取localStorage 中的缓存消息
     this.scrollToBottom()
-    this.initializeSessions()
-    this.loadActiveSession()
-    this.loadSession()
   },
   methods: {
-    loadSession() {
-      const savedSessions = localStorage.getItem('sessions')
-      if (savedSessions) {
-        // 如果本地存储中有会话，则加载它们
-        this.sessions = JSON.parse(savedSessions)
-      } else {
-        // 否则，创建初始会话并保存
-        const initialSession = { id: 1, name: '默认会话', messages: this.conversation }
-        this.sessions = [initialSession]
-        this.saveSessionsToLocalStorage()
-      }
-    },
     saveSessionsToLocalStorage() {
       localStorage.setItem('sessions', JSON.stringify(this.sessions))
     },
@@ -57,6 +42,7 @@ export default {
         this.nextSessionId =
           this.sessions.length > 0 ? Math.max(...this.sessions.map((s) => s.id)) + 1 : 2
       }
+      this.loadActiveSessionMessages()
     },
     initializeWebSocket() {
       //  组件被创建后，建立 WebSocket 连接
@@ -143,7 +129,6 @@ export default {
         this.scrollToBottom()
       }
     },
-    initializeSessions() {},
     loadActiveSession() {
       const activeSessionId = localStorage.getItem('activeSessionId')
       if (activeSessionId !== null) {
@@ -151,9 +136,52 @@ export default {
       }
     },
     setActiveSession(sessionId) {
+      // 保存当前会话的消息到sessions
+      const currentSession = this.sessions.find((session) => session.id === this.activeSessionId)
+      if (currentSession) {
+        currentSession.messages = [...this.conversation]
+      }
+
+      // 更新活动会话ID
       this.activeSessionId = sessionId
       localStorage.setItem('activeSessionId', sessionId.toString())
-      this.loadSession()
+
+      // 加载新会话的消息
+      const newActiveSession = this.sessions.find((s) => s.id === sessionId)
+      if (newActiveSession) {
+        this.conversation = [...newActiveSession.messages]
+      } else {
+        this.conversation = []
+      }
+
+      this.saveSessionsToLocalStorage()
+    },
+
+    saveCurrentSessionMessages() {
+      // 找到当前活动会话，并保存消息
+      const currentSession = this.sessions.find((session) => session.id === this.activeSessionId)
+      if (currentSession) {
+        currentSession.messages = [...this.conversation]
+      }
+    },
+    addNewSession() {
+      // 直接创建一个新会话，不需要复制当前对话内容
+      const newSession = {
+        id: this.nextSessionId,
+        name: `会话${this.nextSessionId}`,
+        messages: []
+      }
+      this.nextSessionId++
+      this.sessions.push(newSession)
+      this.saveSessionsToLocalStorage()
+    },
+    loadActiveSessionMessages() {
+      const activeSession = this.sessions.find((session) => session.id === this.activeSessionId)
+      if (activeSession) {
+        this.conversation = [...activeSession.messages]
+      } else {
+        this.conversation = []
+      }
     },
     deleteSession(sessionId) {
       this.sessions = this.sessions.filter((session) => session.id !== sessionId)
@@ -188,7 +216,7 @@ export default {
       } else {
         if (event.data === '[DONE]') {
           // 重置累积的消息
-          this.saveLocalStorage()
+          this.saveSessionsToLocalStorage()
           this.currentAssistantMessage = ''
           return
         } else {
@@ -228,32 +256,12 @@ export default {
       }
       this.websocket.send(JSON.stringify(message))
     },
-    loadLocalStorage() {
-      //  从 localStorage 读取消息记录
-      const messages = localStorage.getItem('conversation')
-      if (messages !== null) {
-        this.conversation = JSON.parse(messages)
-      }
-      // 页面加载时检查 localStorage 中的验证状态
-      this.isVerified = localStorage.getItem('isVerified') === 'true'
-    },
-    saveLocalStorage() {
-      //  将conversation数组存储到localStorage
-      localStorage.setItem('conversation', JSON.stringify(this.conversation))
-    },
     formatTime(date) {
       if (!(date instanceof Date)) {
         date = new Date(date)
       }
       //  格式化时间戳
       return date.toLocaleTimeString()
-    },
-    addNewSession() {
-      const newSessionName = `会话${this.nextSessionId}`
-      const newSession = { id: this.nextSessionId, name: newSessionName, messages: [] }
-      this.sessions.push(newSession)
-      this.nextSessionId++
-      this.saveSessionsToLocalStorage()
     }
   },
   mounted() {
