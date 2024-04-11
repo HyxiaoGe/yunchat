@@ -39,8 +39,6 @@ export default {
       const savedSessions = localStorage.getItem('sessions')
       if (savedSessions) {
         this.sessions = JSON.parse(savedSessions)
-        this.nextSessionId =
-          this.sessions.length > 0 ? Math.max(...this.sessions.map((s) => s.id)) + 1 : 2
       }
       this.loadActiveSessionMessages()
     },
@@ -109,6 +107,15 @@ export default {
       }
       const trimmedMessage = this.userMessage.trim()
       if (trimmedMessage && this.websocket.readyState == WebSocket.OPEN) {
+        const activeSession = this.sessions.find((session) => session.id === this.activeSessionId)
+        if (
+          activeSession &&
+          activeSession.name.startsWith('新会话') &&
+          activeSession.messages.length === 0
+        ) {
+          activeSession.name = trimmedMessage.substring(0, 20)
+        }
+
         // 保存用户发送的消息
         this.conversation.push({
           content: trimmedMessage,
@@ -127,6 +134,7 @@ export default {
         this.websocket.send(JSON.stringify(message))
         this.userMessage = ''
         this.scrollToBottom()
+        this.saveSessionsToLocalStorage()
       }
     },
     loadActiveSession() {
@@ -147,7 +155,7 @@ export default {
       localStorage.setItem('activeSessionId', sessionId.toString())
 
       // 加载新会话的消息
-      const newActiveSession = this.sessions.find((s) => s.id === sessionId)
+      const newActiveSession = this.sessions.find((session) => session.id === sessionId)
       if (newActiveSession) {
         this.conversation = [...newActiveSession.messages]
       } else {
@@ -168,7 +176,7 @@ export default {
       // 直接创建一个新会话，不需要复制当前对话内容
       const newSession = {
         id: this.nextSessionId,
-        name: `会话${this.nextSessionId}`,
+        name: `新会话`,
         messages: []
       }
       this.nextSessionId++
@@ -184,6 +192,9 @@ export default {
       }
     },
     deleteSession(sessionId) {
+      if (sessionId === this.activeSessionId) {
+        this.setActiveSession(1)
+      }
       this.sessions = this.sessions.filter((session) => session.id !== sessionId)
       this.saveSessionsToLocalStorage()
     },
@@ -216,7 +227,12 @@ export default {
       } else {
         if (event.data === '[DONE]') {
           // 重置累积的消息
-          this.saveSessionsToLocalStorage()
+          console.log('session: ', this.sessions)
+          const activeSession = this.sessions.find((session) => session.id === this.activeSessionId)
+          if (activeSession) {
+            activeSession.messages = [...this.conversation]
+            this.saveSessionsToLocalStorage()
+          }
           this.currentAssistantMessage = ''
           return
         } else {
