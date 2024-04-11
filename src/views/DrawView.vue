@@ -1,11 +1,8 @@
-<script setup>
-import SidebarView from './SidebarView.vue'
-</script>
+<script setup></script>
 
 <template>
   <div>
-    <h1>Coming soon...</h1>
-    <SidebarView />
+    <h1>Building...</h1>
   </div>
 </template>
 
