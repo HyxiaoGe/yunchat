@@ -18,16 +18,46 @@ export default {
       reconnectInterval: null,
       showScrollButton: false,
       isVerified: false,
+      sessions: [{ id: 1, name: '默认会话', messages: [] }],
+      activeSessionId: 1,
+      nextSessionId: 2,
       md: new MarkdownIt()
     }
   },
   created() {
+    this.isVerified = localStorage.getItem('isVerified') === 'true'
+    this.loadSessionsFromLocalStorage()
     this.initializeWebSocket()
     //  读取localStorage 中的缓存消息
-    this.loadLocalStorage()
     this.scrollToBottom()
+    this.initializeSessions()
+    this.loadActiveSession()
+    this.loadSession()
   },
   methods: {
+    loadSession() {
+      const savedSessions = localStorage.getItem('sessions')
+      if (savedSessions) {
+        // 如果本地存储中有会话，则加载它们
+        this.sessions = JSON.parse(savedSessions)
+      } else {
+        // 否则，创建初始会话并保存
+        const initialSession = { id: 1, name: '默认会话', messages: this.conversation }
+        this.sessions = [initialSession]
+        this.saveSessionsToLocalStorage()
+      }
+    },
+    saveSessionsToLocalStorage() {
+      localStorage.setItem('sessions', JSON.stringify(this.sessions))
+    },
+    loadSessionsFromLocalStorage() {
+      const savedSessions = localStorage.getItem('sessions')
+      if (savedSessions) {
+        this.sessions = JSON.parse(savedSessions)
+        this.nextSessionId =
+          this.sessions.length > 0 ? Math.max(...this.sessions.map((s) => s.id)) + 1 : 2
+      }
+    },
     initializeWebSocket() {
       //  组件被创建后，建立 WebSocket 连接
       this.websocket = new WebSocket('ws://chat.hyxiaoblog.com/ws')
@@ -112,6 +142,22 @@ export default {
         this.userMessage = ''
         this.scrollToBottom()
       }
+    },
+    initializeSessions() {},
+    loadActiveSession() {
+      const activeSessionId = localStorage.getItem('activeSessionId')
+      if (activeSessionId !== null) {
+        this.activeSessionId = activeSessionId ? parseInt(activeSessionId, 10) : this.sessions[0].id
+      }
+    },
+    setActiveSession(sessionId) {
+      this.activeSessionId = sessionId
+      localStorage.setItem('activeSessionId', sessionId.toString())
+      this.loadSession()
+    },
+    deleteSession(sessionId) {
+      this.sessions = this.sessions.filter((session) => session.id !== sessionId)
+      this.saveSessionsToLocalStorage()
     },
     clearConversation() {
       if (confirm('确定要清空聊天记录吗？')) {
@@ -201,6 +247,13 @@ export default {
       }
       //  格式化时间戳
       return date.toLocaleTimeString()
+    },
+    addNewSession() {
+      const newSessionName = `会话${this.nextSessionId}`
+      const newSession = { id: this.nextSessionId, name: newSessionName, messages: [] }
+      this.sessions.push(newSession)
+      this.nextSessionId++
+      this.saveSessionsToLocalStorage()
     }
   },
   mounted() {
@@ -225,7 +278,13 @@ export default {
 
 <template>
   <div class="chat-page">
-    <SidebarView />
+    <SidebarView
+      :sessions="sessions"
+      :active-session-id="activeSessionId"
+      @set-active-session="setActiveSession"
+      @add-new-session="addNewSession"
+      @delete-session="deleteSession"
+    />
     <div class="chat-container">
       <!-- 打招呼的文本 -->
       <div class="greeting" v-if="!conversation.length && isVerified">

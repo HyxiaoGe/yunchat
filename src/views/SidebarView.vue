@@ -1,5 +1,8 @@
 <template>
   <div class="sidebar-container">
+    <button class="add-session" @click="addSession">
+      <i class="fa-solid fa-plus"></i>
+    </button>
     <div class="toggle-icon" @click="toggleSidebar">
       <i
         class="fa-solid"
@@ -8,7 +11,17 @@
     </div>
     <div class="sidebar" :class="{ 'is-collapsed': isCollapsed }">
       <ul class="session-list">
-        <li v-for="session in sessions" :key="session.id">{{ session.name }}</li>
+        <li
+          v-for="session in sessions"
+          :key="session.id"
+          @click="selectSession(session.id)"
+          :class="{ active: session.id === activeSessionId }"
+        >
+          {{ session.name }}
+          <span v-if="session.id !== 1" class="delete-icon" @click="deleteSession(session.id)">
+            <i class="fa-solid fa-trash-can"></i>
+          </span>
+        </li>
       </ul>
     </div>
   </div>
@@ -16,21 +29,33 @@
 
 <script>
 export default {
+  props: {
+    sessions: {
+      type: Array,
+      default: () => []
+    },
+    activeSessionId: Number
+  },
   data() {
     return {
       hover: false,
-      isCollapsed: false, // 默认为展开状态
-      sessions: [
-        { id: 1, name: '会话 1' },
-        { id: 2, name: '会话 2' },
-        { id: 3, name: '会话 3' }
-        // ...更多会话
-      ]
+      isCollapsed: false // 默认为展开状态
     }
   },
   methods: {
     toggleSidebar() {
       this.isCollapsed = !this.isCollapsed
+    },
+    selectSession(sessionId) {
+      this.$emit('set-active-session', sessionId)
+    },
+    addSession() {
+      this.$emit('add-new-session')
+    },
+    deleteSession(sessionId) {
+      if (window.confirm('确定要删除这个会话吗？')) {
+        this.$emit('delete-session', sessionId)
+      }
     }
   }
 }
@@ -43,6 +68,10 @@ export default {
 }
 .sidebar-container:hover .toggle-icon {
   opacity: 1;
+}
+
+.active {
+  outline: 2px solid #2c3e50; /* 选中项的样式 */
 }
 
 .toggle-icon {
@@ -88,5 +117,36 @@ export default {
 .session-list li:hover {
   background-color: #34495e; /* 鼠标悬停时的背景色 */
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* 添加轮廓阴影效果 */
+}
+
+.add-session {
+  padding: 10px;
+  margin-left: 43%;
+  background-color: transparent; /* 使按钮透明 */
+  border: none;
+  cursor: pointer;
+  color: #fff; /* 或其他颜色 */
+}
+
+.add-session:hover {
+  color: #3ce767; /* 鼠标悬停时的颜色 */
+}
+
+.delete-icon {
+  cursor: pointer;
+  margin-left: 10px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+/* 确保图标对齐 */
+.session-list li {
+  display: flex;
+  align-items: center; /* 垂直居中 */
+  justify-content: space-between; /* 左侧会话名称和右侧删除图标分布在两侧 */
+}
+
+.session-list li:hover .delete-icon {
+  opacity: 1;
 }
 </style>
