@@ -4,10 +4,10 @@
       <i class="fa-solid fa-plus"></i>
     </button>
     <div class="toggle-icon" @click="toggleSidebar">
-      <i
+      <!-- <i
         class="fa-solid"
         :class="isCollapsed ? 'fa-solid fa-chevron-right' : 'fa-solid fa-chevron-left'"
-      ></i>
+      ></i> -->
     </div>
     <div class="sidebar" :class="{ 'is-collapsed': isCollapsed }">
       <ul class="session-list">
