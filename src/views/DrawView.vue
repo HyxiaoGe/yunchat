@@ -3,6 +3,7 @@
 <template>
   <div>
     <h1>Building...</h1>
+    <span>MidJourney API</span>
   </div>
 </template>
 
