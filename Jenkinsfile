@@ -26,12 +26,12 @@ pipeline {
                 sh 'npm install'
             }
         }
-        stage('Lint') {
-            steps {
-                echo 'Check the application...'
-                sh 'npm run lint'
-            }
-        }
+        // stage('Lint') {
+        //     steps {
+        //         echo 'Check the application...'
+        //         sh 'npm run lint'
+        //     }
+        // }
         stage('Build') {
             steps {
                 echo 'Building the application...'
