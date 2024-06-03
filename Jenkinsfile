@@ -20,5 +20,11 @@ pipeline {
                 sh 'npm -v'
             }
         }
+        stage('Install Dependencies') {
+            steps {
+                echo 'Installing NPM dependencies...'
+                sh 'npm install'
+            }
+        }
     }
 }
