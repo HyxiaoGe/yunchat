@@ -5,11 +5,13 @@ pipeline {
         stage('Checkout') {
             steps {
                 script {
-                    def checkoutTimeout = 20
-                    git branch: 'master',
-                        url: 'https://github.com/HyxiaoGe/xiaohub.git',
-                        credentialsId: 'login_credentials',
-                        timeout: checkoutTimeout
+                    retry(3) {
+                        timeout(time: 5, unit: 'MINUTES') {
+                            git branch: 'master',
+                                url: 'https://github.com/HyxiaoGe/xiaohub.git',
+                                credentialsId: 'login_credentials'
+                        }
+                    }
                 }
             }
         }
@@ -26,12 +28,6 @@ pipeline {
                 sh 'npm install'
             }
         }
-        // stage('Lint') {
-        //     steps {
-        //         echo 'Check the application...'
-        //         sh 'npm run lint'
-        //     }
-        // }
         stage('Build') {
             steps {
                 echo 'Building the application...'
