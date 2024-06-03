@@ -1,6 +1,10 @@
 <template>
   <div class="welcome">
     <h1>Welcome to the XiaoHub</h1>
+    <p>
+      This is a simple web application that demonstrates how to use WebRTC and WebSockets to create
+      a real-time chat, draw, and video conferencing application.
+    </p>
     <p>Select a feature to get started:</p>
     <div class="nav-buttons">
       <router-link to="/chat" class="nav-button">Chat</router-link>
