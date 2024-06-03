@@ -26,5 +26,33 @@ pipeline {
                 sh 'npm install'
             }
         }
+        stage('Lint') {
+            steps {
+                echo 'Check the application...'
+                sh 'npm run lint'
+            }
+        }
+        stage('Build') {
+            steps {
+                echo 'Building the application...'
+                sh 'npm run build'
+            }
+        }
+        stage('Deployment') {
+            steps {
+                echo 'Deploying to Nginx directory...'
+                sh 'rm -rf /docker/nginx/data/html/xiaohub/*'  // 清理旧文件
+                sh 'cp -r dist/* /docker/nginx/data/html/xiaohub/'  // 复制新文件
+                sh 'sudo docker restart nginx'  // 重载 Nginx
+            }
+        }
+    }
+    post {
+        success {
+            echo 'Build succeeded!'
+        }
+        failure {
+            echo 'Build failed!'
+        }
     }
 }
