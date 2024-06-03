@@ -1,6 +1,7 @@
 <template>
   <div class="welcome">
     <h1>Welcome to the XiaoHub</h1>
+    <h2>Real-time communication made easy</h2>
     <p>Select a feature to get started:</p>
     <div class="nav-buttons">
       <router-link to="/chat" class="nav-button">Chat</router-link>
