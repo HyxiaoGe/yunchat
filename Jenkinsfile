@@ -1,16 +1,24 @@
 pipeline {
     agent any
 
-    tools {
-        nodejs 'node'  // 确保与 Jenkins 配置中的 NodeJS 名称匹配
-    }
-
     stages {
-        stage('Prepare') {
+        stage('Checkout') {
             steps {
-                echo 'Checking Node.js and NPM versions...'
-                sh 'node -v'
-                sh 'npm -v'
+                script {
+                    // 定义超时时间（分钟）
+                    def checkoutTimeout = 20
+                    // 设置 Git 检出步骤
+                    git branch: 'master',
+                        url: 'https://github.com/HyxiaoGe/xiaohub.git',
+                        credentialsId: 'login_credentials',
+                        timeout: checkoutTimeout
+                }
+            }
+        }
+
+        stage('Build') {
+            steps {
+                echo 'Building the project...'
             }
         }
     }
