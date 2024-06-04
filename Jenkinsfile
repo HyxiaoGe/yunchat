@@ -16,11 +16,15 @@ pipeline {
                 }
             }
         }
-        stage('Prepare') {
+        stage('Prepare environment') {
             steps {
-                echo 'Checking Node.js and NPM versions...'
-                sh 'node -v'
-                sh 'npm -v'
+                echo 'prepare necessary environment...'
+                script {
+                    // 创建.env 文件
+                    writeFile file: '.env', text: '''
+                    VITE_APP_END_POINT=${END_POINT}
+                    '''
+                }
             }
         }
         stage('Install Dependencies') {
