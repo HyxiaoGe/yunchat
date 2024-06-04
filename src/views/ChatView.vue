@@ -44,7 +44,7 @@ export default {
     },
     initializeWebSocket() {
       //  组件被创建后，建立 WebSocket 连接
-      this.websocket = new WebSocket('ws://chat.hyxiaoblog.com/ws')
+      this.websocket = new WebSocket(`ws://${process.env.VITE_APP_END_POINT}/ws`)
       this.websocket.onmessage = this.handleWebSocketMessage.bind(this)
       this.websocket.onopen = () => {
         console.log('Connected to the WebSocket server')
