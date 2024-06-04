@@ -20,10 +20,10 @@ pipeline {
             steps {
                 script {
                     echo 'prepare necessary environment...'
-                    // 创建.env 文件
-                    writeFile file: '.env', text: '''
-                    VITE_APP_END_POINT=${END_POINT}
-                    '''
+                    // 创建.env 文件，注意使用双引号
+                    writeFile file: '.env', text: """
+                    VITE_APP_END_POINT=${env.END_POINT}
+                    """
                 }
             }
         }
