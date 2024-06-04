@@ -18,8 +18,8 @@ pipeline {
         }
         stage('Prepare environment') {
             steps {
-                echo 'prepare necessary environment...'
                 script {
+                    echo 'prepare necessary environment...'
                     // 创建.env 文件
                     writeFile file: '.env', text: '''
                     VITE_APP_END_POINT=${END_POINT}
