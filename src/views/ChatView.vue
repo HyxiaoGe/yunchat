@@ -2,6 +2,7 @@
 import MarkdownIt from 'markdown-it'
 import SidebarView from './SidebarView.vue'
 import WebSocketService from '@/services/WebSocketService'
+import SessionService from '@/services/SessionService'
 
 export default {
   components: {
@@ -14,8 +15,6 @@ export default {
       conversation: [], // 存储用户消息的数组
       currentAssistantMessage: '',
       verificationKey: '',
-      reconnectAttempts: 0,
-      reconnectInterval: null,
       showScrollButton: false,
       isVerified: false,
       sessions: [{ id: 1, name: '默认会话', messages: [] }],
@@ -27,17 +26,14 @@ export default {
   created() {
     WebSocketService.initializeWebSocket('ws://localhost:8808/ws')
     WebSocketService.registerMessageHandler(this.handleWebSocketMessage)
-    this.isVerified = localStorage.getItem('isVerified') === 'true'
+    this.isVerified = SessionService.get('isVerified') === 'true'
     this.loadActiveSession()
     this.loadSessionsFromLocalStorage()
     this.scrollToBottom()
   },
   methods: {
-    saveSessionsToLocalStorage() {
-      localStorage.setItem('sessions', JSON.stringify(this.sessions))
-    },
     loadSessionsFromLocalStorage() {
-      const savedSessions = localStorage.getItem('sessions')
+      const savedSessions = SessionService.get('sessions')
       if (savedSessions) {
         this.sessions = JSON.parse(savedSessions)
       }
@@ -93,18 +89,18 @@ export default {
         WebSocketService.sendMessage(JSON.stringify(message))
         this.userMessage = ''
         this.scrollToBottom()
-        this.saveSessionsToLocalStorage()
+        SessionService.save(this.sessions)
       }
     },
     loadActiveSession() {
-      const activeSessionId = localStorage.getItem('activeSessionId')
+      const activeSessionId = SessionService.get('activeSessionId')
       if (activeSessionId !== null) {
         this.activeSessionId = activeSessionId ? parseInt(activeSessionId, 10) : this.sessions[0].id
       }
     },
     setActiveSession(sessionId) {
       // 保存当前会话的消息到sessions
-      const currentSession = this.sessions.find((session) => session.id === this.activeSessionId)
+      const currentSession = SessionService.findSessionById(this.sessions, this.activeSessionId)
       if (currentSession) {
         currentSession.messages = [...this.conversation]
       }
@@ -121,29 +117,24 @@ export default {
         this.conversation = []
       }
 
-      this.saveSessionsToLocalStorage()
+      SessionService.save(this.sessions)
     },
 
     saveCurrentSessionMessages() {
       // 找到当前活动会话，并保存消息
-      const currentSession = this.sessions.find((session) => session.id === this.activeSessionId)
+      const currentSession = SessionService.findSessionById(this.sessions, this.activeSessionId)
       if (currentSession) {
         currentSession.messages = [...this.conversation]
       }
     },
     addNewSession() {
       // 直接创建一个新会话，不需要复制当前对话内容
-      const newSession = {
-        id: this.nextSessionId,
-        name: `新会话`,
-        messages: []
-      }
-      this.nextSessionId++
+      const newSession = SessionService.create(this.nextSessionId++)
       this.sessions.push(newSession)
-      this.saveSessionsToLocalStorage()
+      SessionService.save(this.sessions)
     },
     loadActiveSessionMessages() {
-      const activeSession = this.sessions.find((session) => session.id === this.activeSessionId)
+      const activeSession = SessionService.findSessionById(this.sessions, this.activeSessionId)
       if (activeSession) {
         this.conversation = [...activeSession.messages]
       } else {
@@ -154,13 +145,12 @@ export default {
       if (sessionId === this.activeSessionId) {
         this.setActiveSession(1)
       }
-      this.sessions = this.sessions.filter((session) => session.id !== sessionId)
-      this.saveSessionsToLocalStorage()
+      SessionService.save(this.sessions)
     },
     clearConversation() {
       if (confirm('确定要清空聊天记录吗？')) {
         this.conversation = [] // 清空聊天数组
-        localStorage.removeItem('conversation') // 如果你使用localStorage存储聊天记录的话
+        SessionService.clear('conversation')
       }
     },
     renderMarkdown(content) {
@@ -189,7 +179,7 @@ export default {
           const activeSession = this.sessions.find((session) => session.id === this.activeSessionId)
           if (activeSession) {
             activeSession.messages = [...this.conversation]
-            this.saveSessionsToLocalStorage()
+            SessionService.save(this.sessions)
           }
           this.currentAssistantMessage = ''
           return

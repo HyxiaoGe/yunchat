@@ -3,12 +3,6 @@ class WebSocketService {
     this.websocket = null
     this.reconnectInterval = null
     this.reconnectAttempts = 0
-    this.isVerified = false
-    this.verificationKey = ''
-    this.sessions = []
-    this.activeSessionId = null
-    this.conversation = []
-    this.currentAssistantMessage = ''
     this.messageHandlers = new Set()
   }
 
