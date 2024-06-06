@@ -1,8 +1,8 @@
 <script>
-import MarkdownIt from 'markdown-it'
 import SidebarView from './SidebarView.vue'
 import WebSocketService from '@/services/WebSocketService'
 import SessionService from '@/services/SessionService'
+import MessageFormatter from '@/services/MessageFormatter'
 
 export default {
   components: {
@@ -19,8 +19,7 @@ export default {
       isVerified: false,
       sessions: [{ id: 1, name: '默认会话', messages: [] }],
       activeSessionId: 1,
-      nextSessionId: 2,
-      md: new MarkdownIt()
+      nextSessionId: 2
     }
   },
   created() {
@@ -54,6 +53,12 @@ export default {
         messagesContainer.scrollTop = messagesContainer.scrollHeight
         this.onScroll()
       })
+    },
+    renderMarkdown(content) {
+      return MessageFormatter.renderMarkdown(content)
+    },
+    isCodeBlock(content) {
+      return MessageFormatter.isCodeBlock(content)
     },
     sendMessage() {
       if (!this.isVerified) {
@@ -119,7 +124,6 @@ export default {
 
       SessionService.save(this.sessions)
     },
-
     saveCurrentSessionMessages() {
       // 找到当前活动会话，并保存消息
       const currentSession = SessionService.findSessionById(this.sessions, this.activeSessionId)
@@ -152,18 +156,6 @@ export default {
         this.conversation = [] // 清空聊天数组
         SessionService.clear('conversation')
       }
-    },
-    renderMarkdown(content) {
-      if (this.isCodeBlock(content)) {
-        content = content.substring(3, content.length - 3)
-      }
-      return this.md.render(content)
-    },
-    isCodeBlock(content) {
-      if (typeof content !== 'string') {
-        return false
-      }
-      return content.trim().startsWith('```')
     },
     handleWebSocketMessage(data) {
       if (data === 'success') {
@@ -209,7 +201,6 @@ export default {
         this.scrollToBottom()
       }
     },
-
     verifyKey() {
       if (this.verificationKey === '') {
         alert('密钥不能为空！！！')
@@ -254,29 +245,23 @@ export default {
       @delete-session="deleteSession"
     />
     <div class="chat-container">
-      <!-- 打招呼的文本 -->
       <div class="greeting" v-if="!conversation.length && isVerified">
         您好！有什么可以帮助你的吗？
       </div>
-
-      <!-- 验证输入框 -->
       <div v-if="!isVerified" class="verification-area">
         <input v-model="verificationKey" placeholder="请输入密钥进行验证" />
         <button @click="verifyKey">验证</button>
       </div>
       <div class="messages" ref="messagesContainer">
-        <!-- 渲染整个对话 -->
         <div v-for="(msg, index) in conversation" :key="index" :class="['message', msg.role]">
           <i
             :class="['icon', msg.role === 'user' ? 'fa-solid fa-user-tie' : 'fa-solid fa-robot']"
           ></i>
-          <!-- 代码区-->
           <div
             v-if="isCodeBlock(msg.content)"
             class="code-block"
             v-html="renderMarkdown(msg.content)"
           ></div>
-          <!-- 文本区 -->
           <div v-else class="text" v-html="renderMarkdown(msg.content)"></div>
           <div class="timestamp" v-if="msg.role === 'user'">{{ formatTime(msg.time) }}</div>
         </div>
@@ -285,7 +270,6 @@ export default {
         </button>
       </div>
       <div v-if="isVerified">
-        <!-- 输入区 -->
         <div class="input-area">
           <textarea
             type="text"
@@ -296,7 +280,6 @@ export default {
           <button :disabled="!userMessage.trim()" @click="sendMessage" class="send-button">
             <i class="fas fa-paper-plane"></i>
           </button>
-          <!-- 清空聊天按钮 -->
           <button @click="clearConversation" class="clear-conversation">
             <i class="fas fa-eraser"></i> 清空对话
           </button>
