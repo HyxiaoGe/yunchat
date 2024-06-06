@@ -1,6 +1,7 @@
 <script>
 import MarkdownIt from 'markdown-it'
 import SidebarView from './SidebarView.vue'
+import WebSocketService from '@/services/WebSocketService'
 
 export default {
   components: {
@@ -13,7 +14,6 @@ export default {
       conversation: [], // 存储用户消息的数组
       currentAssistantMessage: '',
       verificationKey: '',
-      websocket: null, //  websocket连接
       reconnectAttempts: 0,
       reconnectInterval: null,
       showScrollButton: false,
@@ -25,10 +25,11 @@ export default {
     }
   },
   created() {
+    WebSocketService.initializeWebSocket('ws://localhost:8808/ws')
+    WebSocketService.registerMessageHandler(this.handleWebSocketMessage)
     this.isVerified = localStorage.getItem('isVerified') === 'true'
     this.loadActiveSession()
     this.loadSessionsFromLocalStorage()
-    this.initializeWebSocket()
     this.scrollToBottom()
   },
   methods: {
@@ -41,48 +42,6 @@ export default {
         this.sessions = JSON.parse(savedSessions)
       }
       this.loadActiveSessionMessages()
-    },
-    initializeWebSocket() {
-      //  组件被创建后，建立 WebSocket 连接
-      this.websocket = new WebSocket(`ws://${process.env.VITE_APP_END_POINT}/ws`)
-      this.websocket.onmessage = this.handleWebSocketMessage.bind(this)
-      this.websocket.onopen = () => {
-        console.log('Connected to the WebSocket server')
-        //  重置重连尝试次数
-        this.reconnectAttempts = 0
-        if (this.reconnectInterval) {
-          clearInterval(this.reconnectInterval)
-          this.reconnectInterval = null
-        }
-      }
-      this.websocket.onerror = (error) => {
-        console.error('WebSocket Error:', error)
-      }
-      this.websocket.onclose = (event) => {
-        console.log('WebSocket is closed now:', event)
-        if (!this.reconnectInterval) {
-          this.reconnectWebSocket()
-        }
-      }
-    },
-    reconnectWebSocket() {
-      const MAX_RECONNECT_ATTEMPTS = 10
-      const RECONNECT_INTERVAL_BASE = 1000
-      const RECONNECT_INTERVAL_MAX = 30000
-
-      if (this.reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-        let reconnectDelay = Math.min(
-          RECONNECT_INTERVAL_BASE * Math.pow(2, this.reconnectAttempts),
-          RECONNECT_INTERVAL_MAX
-        )
-        setTimeout(() => {
-          console.log(`Attempting to reconnect... (Attempt: ${this.reconnectAttempts + 1})`)
-          this.initializeWebSocket()
-        }, reconnectDelay)
-        this.reconnectAttempts++
-      } else {
-        console.error('Max WebSocket reconnect attempts reached.')
-      }
     },
     onScroll() {
       const messagesContainer = this.$refs.messagesContainer
@@ -106,7 +65,7 @@ export default {
         return
       }
       const trimmedMessage = this.userMessage.trim()
-      if (trimmedMessage && this.websocket.readyState == WebSocket.OPEN) {
+      if (trimmedMessage && WebSocketService.getReadyState()) {
         const activeSession = this.sessions.find((session) => session.id === this.activeSessionId)
         if (
           activeSession &&
@@ -131,7 +90,7 @@ export default {
             content: msg.content
           }))
         }
-        this.websocket.send(JSON.stringify(message))
+        WebSocketService.sendMessage(JSON.stringify(message))
         this.userMessage = ''
         this.scrollToBottom()
         this.saveSessionsToLocalStorage()
@@ -216,16 +175,15 @@ export default {
       }
       return content.trim().startsWith('```')
     },
-    //  接受后端返回的数据
-    handleWebSocketMessage(event) {
-      if (event.data === 'success') {
+    handleWebSocketMessage(data) {
+      if (data === 'success') {
         localStorage.setItem('isVerified', 'true')
         this.isVerified = true
-      } else if (event.data === 'failure') {
+      } else if (data === 'failure') {
         alert('密钥错误，请重新输入！！！')
         this.verificationKey = ''
       } else {
-        if (event.data === '[DONE]') {
+        if (data === '[DONE]') {
           // 重置累积的消息
           console.log('session: ', this.sessions)
           const activeSession = this.sessions.find((session) => session.id === this.activeSessionId)
@@ -237,7 +195,7 @@ export default {
           return
         } else {
           // 实时更新累积的消息
-          this.currentAssistantMessage += event.data
+          this.currentAssistantMessage += data
           // 然后更新到对话中以实时渲染
           // 检查对话数组中最后一条消息是否属于助手且未完成
           if (
@@ -261,6 +219,7 @@ export default {
         this.scrollToBottom()
       }
     },
+
     verifyKey() {
       if (this.verificationKey === '') {
         alert('密钥不能为空！！！')
@@ -270,7 +229,7 @@ export default {
         action: 'verify',
         secretKey: this.verificationKey
       }
-      this.websocket.send(JSON.stringify(message))
+      WebSocketService.sendMessage(JSON.stringify(message))
     },
     formatTime(date) {
       if (!(date instanceof Date)) {
@@ -288,14 +247,9 @@ export default {
   beforeUnmount() {
     const messagesContainer = this.$refs.messagesContainer
     messagesContainer.removeEventListener('scroll', this.onScroll)
+    WebSocketService.unregisterMessageHandler(this.handleWebSocketMessage)
     //  组件被销毁前关闭 WebSocket 连接
-    if (this.websocket) {
-      this.websocket.close()
-    }
-    // 清除重连间隔
-    if (this.reconnectInterval) {
-      clearInterval(this.reconnectInterval)
-    }
+    WebSocketService.closeWebSocket()
   }
 }
 </script>
