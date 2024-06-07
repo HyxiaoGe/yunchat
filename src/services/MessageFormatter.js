@@ -1,8 +1,25 @@
 import MarkdownIt from 'markdown-it'
+import hljs from 'highlight.js' // 引入 highlight.js
 
 class MessageFormatter {
   constructor() {
-    this.md = new MarkdownIt()
+    this.md = new MarkdownIt({
+      html: true,
+      highlight: function (str, lang) {
+        console.log('str', str)
+        // 代码高亮配置函数
+        if (lang && hljs.getLanguage(lang)) {
+          try {
+            return `<pre class="hljs"><code>${hljs.highlight(lang, str, true).value}</code></pre>`
+          } catch (_) {
+            console.error('Highlighting failed:', _)
+          }
+        }
+
+        // 无法识别的语言或不进行高亮的情况
+        return `<pre class="hljs"><code>${MarkdownIt.utils.escapeHtml(str)}</code></pre>`
+      }
+    })
   }
 
   renderMarkdown(content) {

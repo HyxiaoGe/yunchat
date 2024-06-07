@@ -8,7 +8,6 @@ class SessionService {
   }
 
   save(sessions) {
-    console.log('sessions', sessions)
     localStorage.setItem('sessions', JSON.stringify(sessions))
   }
 

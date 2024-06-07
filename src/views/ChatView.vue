@@ -167,7 +167,6 @@ export default {
       } else {
         if (data === '[DONE]') {
           // 重置累积的消息
-          console.log('session: ', this.sessions)
           const activeSession = this.sessions.find((session) => session.id === this.activeSessionId)
           if (activeSession) {
             activeSession.messages = [...this.conversation]
