@@ -30,7 +30,7 @@ class MessageFormatter {
   }
   isCodeBlock(content) {
     if (typeof content !== 'string') {
-      return false
+      return
     }
     return content.trim().startsWith('```')
   }

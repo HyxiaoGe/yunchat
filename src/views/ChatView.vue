@@ -19,7 +19,8 @@ export default {
       isVerified: false,
       sessions: [{ id: 1, name: '默认会话', messages: [] }],
       activeSessionId: 1,
-      nextSessionId: 2
+      nextSessionId: 2,
+      uploadedFile: null
     }
   },
   created() {
@@ -55,10 +56,25 @@ export default {
       })
     },
     renderMarkdown(content) {
-      return MessageFormatter.renderMarkdown(content)
+      if (content.startsWith('[')) {
+        const text = JSON.parse(content)[0].text
+        return MessageFormatter.renderMarkdown(text)
+      }
+      if (typeof content === 'string' && content !== '') {
+        return MessageFormatter.renderMarkdown(content)
+      }
     },
     isCodeBlock(content) {
-      return MessageFormatter.isCodeBlock(content)
+      if (content == '') {
+        return
+      }
+      if (content.startsWith('[')) {
+        const text = JSON.parse(content)[0].text
+        return MessageFormatter.isCodeBlock(text)
+      }
+      if (typeof content === 'string') {
+        return MessageFormatter.isCodeBlock(content)
+      }
     },
     sendMessage() {
       if (!this.isVerified) {
@@ -78,7 +94,12 @@ export default {
 
         // 保存用户发送的消息
         this.conversation.push({
-          content: trimmedMessage,
+          content: JSON.stringify([
+            {
+              type: 'text',
+              text: trimmedMessage
+            }
+          ]),
           time: new Date(),
           role: 'user',
           done: true // 标记为完成
@@ -86,12 +107,23 @@ export default {
         //  发送消息到服务器，对话上下文只支持最近5次对话
         const message = {
           action: 'session',
+          file: null,
           conversation: this.conversation.slice(-10).map((msg) => ({
             role: msg.role,
             content: msg.content
           }))
         }
-        WebSocketService.sendMessage(JSON.stringify(message))
+        if (this.uploadedFile) {
+          const reader = new FileReader()
+          reader.onload = (event) => {
+            const base64File = event.target.result
+            message.file = base64File
+            WebSocketService.sendMessage(JSON.stringify(message))
+          }
+          reader.readAsDataURL(this.uploadedFile)
+        } else {
+          WebSocketService.sendMessage(JSON.stringify(message))
+        }
         this.userMessage = ''
         this.scrollToBottom()
         SessionService.save(this.sessions)
@@ -185,11 +217,21 @@ export default {
             !this.conversation[this.conversation.length - 1].done
           ) {
             // 更新最后一条消息的文本
-            this.conversation[this.conversation.length - 1].content = this.currentAssistantMessage
+            this.conversation[this.conversation.length - 1].content = JSON.stringify([
+              {
+                type: 'text',
+                text: this.currentAssistantMessage
+              }
+            ])
           } else {
             // 否则，添加一个新的消息条目
             this.conversation.push({
-              content: this.currentAssistantMessage,
+              content: JSON.stringify([
+                {
+                  type: 'text',
+                  text: this.currentAssistantMessage
+                }
+              ]),
               role: 'assistant',
               done: false
             })
@@ -217,6 +259,42 @@ export default {
       }
       //  格式化时间戳
       return date.toLocaleTimeString()
+    },
+    triggerFileUpload() {
+      this.$refs.fileInput.click()
+    },
+    handleFileUpload(event) {
+      const file = event.target.files[0]
+      if (file) {
+        console.log('File selected: ', file)
+        this.uploadedFile = file
+        this.checkFile()
+      }
+    },
+    checkFile() {
+      const maxFileSize = 262144
+      const allowedTypes = [
+        'image/jpeg',
+        'image/png',
+        'text/plain',
+        'application/pdf',
+        'text/csv',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      ]
+      if (this.uploadedFile) {
+        if (this.uploadedFile.size > maxFileSize) {
+          alert('文件太大, 文件大小不能超过256KB!')
+          return
+        }
+      }
+      if (!allowedTypes.includes(this.uploadedFile.type)) {
+        alert('不支持的文件类型。请重新上传。')
+      }
+      this.addFileToConversation()
+    },
+    addFileToConversation() {
+      console.log('Adding file to conversation: ', this.uploadedFile)
     }
   },
   mounted() {
@@ -270,13 +348,21 @@ export default {
       </div>
       <div v-if="isVerified">
         <div class="input-area">
+          <button class="file-upload-icon" @click="triggerFileUpload">
+            <i class="fa-solid fa-upload"></i>
+          </button>
+          <input type="file" ref="fileInput" @change="handleFileUpload" style="display: none" />
           <textarea
             type="text"
             v-model="userMessage"
             placeholder="请输入文本"
             @keyup.enter.exact="sendMessage"
           ></textarea>
-          <button :disabled="!userMessage.trim()" @click="sendMessage" class="send-button">
+          <button
+            :disabled="!userMessage.trim() && !uploadedFile"
+            @click="sendMessage"
+            class="send-button"
+          >
             <i class="fas fa-paper-plane"></i>
           </button>
           <button @click="clearConversation" class="clear-conversation">
