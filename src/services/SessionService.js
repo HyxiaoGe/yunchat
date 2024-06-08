@@ -1,8 +1,4 @@
 class SessionService {
-  constructor() {
-    this.sessions = [{ id: 1, name: '默认会话', messages: [] }]
-  }
-
   load() {
     return JSON.parse(localStorage.getItem('sessions')) || []
   }
@@ -28,17 +24,17 @@ class SessionService {
     return newSession
   }
 
-  update(id, session) {
-    const sessionIndex = this.sessions.findIndex((session) => session.id === id)
+  update(id, sessions) {
+    const sessionIndex = sessions.findIndex((session) => session.id === id)
     if (sessionIndex === -1) {
-      this.sessions[sessionIndex] = { ...this.sessions[sessionIndex], ...session }
+      sessions[sessionIndex] = { ...this.sessions[sessionIndex], ...sessions }
       this.save()
     }
   }
 
-  delete(sessionId) {
-    this.sessions = this.sessions.filter((session) => session.id !== sessionId)
-    this.save()
+  delete(sessions, sessionId) {
+    sessions = sessions.filter((session) => session.id !== sessionId)
+    this.save(sessions)
   }
 
   clear(item) {

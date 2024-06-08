@@ -19,12 +19,12 @@ export default {
       isVerified: false,
       sessions: [{ id: 1, name: '默认会话', messages: [] }],
       activeSessionId: 1,
-      nextSessionId: 2,
-      uploadedFile: null
+      uploadedFile: null,
+      base64Url: null
     }
   },
   created() {
-    WebSocketService.initializeWebSocket(`ws://${process.env.VITE_APP_END_POINT}/ws`)
+    WebSocketService.initializeWebSocket('ws://localhost:8808/ws')
     WebSocketService.registerMessageHandler(this.handleWebSocketMessage)
     this.isVerified = SessionService.get('isVerified') === 'true'
     this.loadActiveSession()
@@ -124,6 +124,7 @@ export default {
         } else {
           WebSocketService.sendMessage(JSON.stringify(message))
         }
+        this.base64Url = message.file
         this.userMessage = ''
         this.scrollToBottom()
         SessionService.save(this.sessions)
@@ -164,8 +165,13 @@ export default {
       }
     },
     addNewSession() {
+      if (this.sessions.length >= 15) {
+        alert('最多只能创建10个新会话！')
+        return
+      }
+      const sessionId = this.generateSessionId()
       // 直接创建一个新会话，不需要复制当前对话内容
-      const newSession = SessionService.create(this.nextSessionId++)
+      const newSession = SessionService.create(sessionId)
       this.sessions.push(newSession)
       SessionService.save(this.sessions)
     },
@@ -181,7 +187,8 @@ export default {
       if (sessionId === this.activeSessionId) {
         this.setActiveSession(1)
       }
-      SessionService.save(this.sessions)
+      SessionService.delete(this.sessions, sessionId)
+      this.$router.go(0)
     },
     clearConversation() {
       if (confirm('确定要清空聊天记录吗？')) {
@@ -293,8 +300,11 @@ export default {
       }
       this.addFileToConversation()
     },
-    addFileToConversation() {
-      console.log('Adding file to conversation: ', this.uploadedFile)
+    generateSessionId() {
+      const currentTimestampInMs = Date.now()
+      const salt = Math.random()
+      const timestampWithSalt = Math.floor(currentTimestampInMs + salt)
+      return timestampWithSalt
     }
   },
   mounted() {
