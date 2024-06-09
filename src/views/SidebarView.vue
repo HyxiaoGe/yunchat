@@ -19,7 +19,7 @@
         >
           {{ session.name }}
           <span
-            v-if="session.id !== 1"
+            v-if="session.id > 6"
             class="delete-icon"
             @click="deleteSession(session.id, $event)"
           >

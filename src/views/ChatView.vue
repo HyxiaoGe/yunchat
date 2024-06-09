@@ -13,18 +13,76 @@ export default {
     return {
       userMessage: '',
       conversation: [], // 存储用户消息的数组
+      firstAssistantMessage: '',
       currentAssistantMessage: '',
       verificationKey: '',
       showScrollButton: false,
       isVerified: false,
-      sessions: [{ id: 1, name: '默认会话', messages: [] }],
+      sessions: [
+        {
+          id: 1,
+          name: '智能助手',
+          messages: [
+            {
+              role: 'assistant',
+              content:
+                '[{"type":"text","text":"你好, 我是一个AI智能助手，可以回答一些问题，也可以和用户聊天。"}]'
+            }
+          ]
+        },
+        {
+          id: 2,
+          name: '编程助理',
+          messages: [
+            {
+              role: 'assistant',
+              content:
+                '[{"type":"text","text":"你好, 我是一个AI编程助理，精通多门语言编程并且熟读计算机网络知识、数据库、算法等领域。"}]'
+            }
+          ]
+        },
+        {
+          id: 3,
+          name: '玩梗高手',
+          messages: [
+            {
+              role: 'assistant',
+              content:
+                '[{"type":"text","text":"你好, 我是一个玩梗高手，能为你总结和解释全网新鲜、热门、有趣的流行语和热梗。"}]'
+            }
+          ]
+        },
+        {
+          id: 4,
+          name: '外语助手',
+          messages: [
+            {
+              role: 'assistant',
+              content:
+                '[{"type":"text","text":"你好, 我是一个外语助手，可以帮助提升您的外语水平，并耐心为您讲解遇到的一些问题。"}]'
+            }
+          ]
+        },
+        {
+          id: 5,
+          name: '百科全书',
+          messages: [
+            {
+              role: 'assistant',
+              content:
+                '[{"type":"text","text":"你好, 我是一个百科全书，可以分享一些生活小妙招、冷知识、趣闻等"}]'
+            }
+          ]
+        }
+      ],
       activeSessionId: 1,
       uploadedFile: null,
       base64Url: null
     }
   },
   created() {
-    WebSocketService.initializeWebSocket('ws://localhost:8808/ws')
+    // WebSocketService.initializeWebSocket('ws://localhost:8808/ws')
+    WebSocketService.initializeWebSocket(`ws://${process.env.VITE_APP_END_POINT}/ws`)
     WebSocketService.registerMessageHandler(this.handleWebSocketMessage)
     this.isVerified = SessionService.get('isVerified') === 'true'
     this.loadActiveSession()
@@ -298,7 +356,6 @@ export default {
       if (!allowedTypes.includes(this.uploadedFile.type)) {
         alert('不支持的文件类型。请重新上传。')
       }
-      this.addFileToConversation()
     },
     generateSessionId() {
       const currentTimestampInMs = Date.now()
