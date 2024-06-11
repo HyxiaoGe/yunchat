@@ -178,6 +178,9 @@ export default {
       }
     },
     addNewSession() {
+      if (!this.isVerified) {
+        return
+      }
       if (this.sessions.length >= 15) {
         alert('最多只能创建10个新会话！')
         return
