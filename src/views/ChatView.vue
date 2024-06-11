@@ -147,6 +147,9 @@ export default {
       }
     },
     setActiveSession(sessionId) {
+      if (!this.isVerified) {
+        return
+      }
       // 保存当前会话的消息到sessions
       const currentSession = SessionService.findSessionById(this.sessions, this.activeSessionId)
       if (currentSession) {
@@ -186,6 +189,9 @@ export default {
       SessionService.save(this.sessions)
     },
     loadActiveSessionMessages() {
+      if (!this.isVerified) {
+        return
+      }
       const activeSession = SessionService.findSessionById(this.sessions, this.activeSessionId)
       if (activeSession) {
         this.conversation = [...activeSession.messages]

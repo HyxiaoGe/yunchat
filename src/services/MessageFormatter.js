@@ -6,7 +6,6 @@ class MessageFormatter {
     this.md = new MarkdownIt({
       html: true,
       highlight: function (str, lang) {
-        console.log('str', str)
         // 代码高亮配置函数
         if (lang && hljs.getLanguage(lang)) {
           try {
