@@ -33,8 +33,8 @@ export default {
     }
   },
   created() {
-    // WebSocketService.initializeWebSocket('ws://localhost:8808/ws')
-    WebSocketService.initializeWebSocket(`ws://${process.env.VITE_APP_END_POINT}/ws`)
+    WebSocketService.initializeWebSocket('ws://localhost:8808/ws')
+    // WebSocketService.initializeWebSocket(`ws://${process.env.VITE_APP_END_POINT}/ws`)
     WebSocketService.registerMessageHandler(this.handleWebSocketMessage)
     this.isVerified = SessionService.get('isVerified') === 'true'
     this.loadActiveSession()
@@ -114,14 +114,17 @@ export default {
           role: 'user',
           done: true // 标记为完成
         })
-        //  发送消息到服务器，对话上下文只支持最近5次对话
+        //  对话上下文只支持最近5次对话(固定首Prompt)
+        const firstPrompt = this.conversation[0]
         const message = {
           action: 'session',
           file: null,
-          conversation: this.conversation.slice(-10).map((msg) => ({
-            role: msg.role,
-            content: msg.content
-          }))
+          conversation: [firstPrompt].concat(
+            this.conversation.slice(-10).map((msg) => ({
+              role: msg.role,
+              content: msg.content
+            }))
+          )
         }
         if (this.uploadedFile) {
           const reader = new FileReader()
