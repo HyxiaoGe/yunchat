@@ -28,17 +28,13 @@ class SessionService {
     const sessionIndex = sessions.findIndex((session) => session.id === id)
     if (sessionIndex === -1) {
       sessions[sessionIndex] = { ...this.sessions[sessionIndex], ...sessions }
-      this.save()
+      this.save(sessions)
     }
   }
 
-  delete(sessions, sessionId) {
-    sessions = sessions.filter((session) => session.id !== sessionId)
+  delete(id, sessions) {
+    sessions = sessions.filter((session) => session.id !== id)
     this.save(sessions)
-  }
-
-  clear(item) {
-    localStorage.removeItem(item)
   }
 }
 

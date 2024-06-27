@@ -33,7 +33,7 @@ export default {
     }
   },
   created() {
-    //WebSocketService.initializeWebSocket('ws://localhost:8808/ws')
+    // WebSocketService.initializeWebSocket('ws://localhost:8808/ws')
     WebSocketService.initializeWebSocket(`ws://${process.env.VITE_APP_END_POINT}/ws`)
     WebSocketService.registerMessageHandler(this.handleWebSocketMessage)
     this.isVerified = SessionService.get('isVerified') === 'true'
@@ -209,13 +209,17 @@ export default {
       if (sessionId === this.activeSessionId) {
         this.setActiveSession(1)
       }
-      SessionService.delete(this.sessions, sessionId)
+      SessionService.delete(sessionId, this.sessions)
       this.$router.go(0)
     },
     clearConversation() {
-      if (confirm('确定要清空聊天记录吗？')) {
-        this.conversation = [] // 清空聊天数组
-        SessionService.clear('conversation')
+      if (confirm('确定要清空上下文吗？')) {
+        this.conversation = this.conversation.slice(0, 1) // 清空聊天数组
+        const activeSession = this.sessions.find((session) => session.id === this.activeSessionId)
+        if (activeSession) {
+          activeSession.messages = [...this.conversation]
+          SessionService.save(this.sessions)
+        }
       }
     },
     handleWebSocketMessage(data) {
@@ -397,7 +401,7 @@ export default {
             <i class="fas fa-paper-plane"></i>
           </button>
           <button @click="clearConversation" class="clear-conversation">
-            <i class="fas fa-eraser"></i> 清空对话
+            <i class="fas fa-eraser"></i> 清空上下文
           </button>
         </div>
       </div>
