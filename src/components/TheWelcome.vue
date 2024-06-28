@@ -1,57 +1,93 @@
 <template>
   <div class="welcome">
-    <h1>Welcome to the XiaoHub</h1>
-    <p>Select a feature to get started:</p>
-    <div class="nav-buttons">
-      <router-link to="/chat" class="nav-button">Chat</router-link>
-      <router-link to="/draw" class="nav-button">Draw</router-link>
-      <router-link to="/video" class="nav-button">Video</router-link>
-    </div>
+    <el-row type="flex" justify="center">
+      <el-col :span="24">
+        <h3 class="welcome-title">欢迎来到 XiaoHub, 请选择想要体验的功能：</h3>
+        <div class="nav-buttons-creative" style="margin-bottom: 1em">
+          <router-link to="/chat" custom v-slot="{ navigate }">
+            <el-tooltip content="AI 聊天" placement="top">
+              <el-button
+                class="chat-button"
+                type="primary"
+                icon="ChatLineRound"
+                style="font-size: 24px"
+                placeholder="tttt"
+                @click="navigate"
+              />
+            </el-tooltip>
+          </router-link>
+          <router-link to="/draw" custom v-slot="{ navigate }">
+            <el-tooltip content="AI 生图" placement="top">
+              <el-button
+                class="img-button"
+                type="primary"
+                icon="Picture"
+                style="font-size: 24px"
+                @click="navigate"
+            /></el-tooltip>
+          </router-link>
+          <router-link to="/video" custom v-slot="{ navigate }">
+            <el-tooltip content="AI 音频" placement="top">
+              <el-button
+                class="radio-button"
+                type="primary"
+                icon="Microphone"
+                style="font-size: 24px"
+                @click="navigate"
+              />
+            </el-tooltip>
+          </router-link>
+          <router-link to="/video" custom v-slot="{ navigate }">
+            <el-tooltip content="AI 短视频" placement="top">
+              <el-button
+                class="shortvideo-button"
+                type="primary"
+                icon="VideoPlay"
+                style="font-size: 24px"
+                @click="navigate"
+              />
+            </el-tooltip>
+          </router-link>
+        </div>
+        <div class="nav-buttons-analyze">
+          <router-link to="/video" custom v-slot="{ navigate }">
+            <el-tooltip content="AI 音乐" placement="top">
+              <el-button
+                class="music-button"
+                type="primary"
+                icon="Headset"
+                style="font-size: 24px"
+                @click="navigate"
+              />
+            </el-tooltip>
+          </router-link>
+          <router-link to="/video" custom v-slot="{ navigate }">
+            <el-tooltip content="AI 数据分析" placement="top">
+              <el-button
+                class="analyze-button"
+                type="primary"
+                icon="DataLine"
+                style="font-size: 24px"
+                @click="navigate"
+              />
+            </el-tooltip>
+          </router-link>
+          <router-link to="/video" custom v-slot="{ navigate }">
+            <el-tooltip content="开发中..." placement="top">
+              <el-button
+                class="morefill-button"
+                type="primary"
+                icon="MoreFilled"
+                style="font-size: 24px"
+                @click="navigate"
+              />
+            </el-tooltip>
+          </router-link>
+        </div>
+      </el-col>
+    </el-row>
   </div>
 </template>
 
-<script setup>
-// TheWelcome.vue 无需额外的脚本代码，因为它只用来显示信息和导航链接。
-</script>
-
-<style scoped>
-.welcome {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  background-color: #f5f5f5;
-  text-align: center;
-}
-
-h1 {
-  color: #35495e;
-  margin-bottom: 0.5em;
-}
-
-p {
-  color: #626262;
-  margin-bottom: 1em;
-}
-
-.nav-buttons {
-  display: flex;
-  justify-content: center;
-  gap: 1em;
-}
-
-.nav-button {
-  padding: 0.5em 1em;
-  border: 1px solid #ccc;
-  text-decoration: none;
-  color: #333;
-  border-radius: 4px;
-  transition: all 0.3s ease;
-}
-
-.nav-button:hover {
-  border-color: #42b983;
-  color: #42b983;
-}
-</style>
+<script setup></script>
+<style scoped src="../styles/welcome.css"></style>

@@ -2,8 +2,7 @@
 
 <template>
   <div>
-    <h1>Building...</h1>
-    <span>MidJourney API</span>
+    <h1>Coming soon...</h1>
   </div>
 </template>
 
