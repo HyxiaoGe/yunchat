@@ -1,33 +1,40 @@
 <template>
   <div class="sidebar-container">
-    <button class="add-session" @click="addSession">
-      <i class="fa-solid fa-plus"></i>
-    </button>
-    <div class="toggle-icon" @click="toggleSidebar">
-      <!-- <i
-        class="fa-solid"
-        :class="isCollapsed ? 'fa-solid fa-chevron-right' : 'fa-solid fa-chevron-left'"
-      ></i> -->
-    </div>
-    <div class="sidebar" :class="{ 'is-collapsed': isCollapsed }">
-      <ul class="session-list">
-        <li
-          v-for="session in sessions"
-          :key="session.id"
-          @click="selectSession(session.id)"
-          :class="{ active: session.id === activeSessionId }"
+    <el-tooltip content="添加新会话" placement="top">
+      <el-button
+        icon="CirclePlusFilled"
+        style="font-size: 24px"
+        class="add-session"
+        @click="addSession"
+      />
+    </el-tooltip>
+    <el-menu
+      class="el-menu"
+      :collapse="isCollapsed"
+      :default-active="activeSessionId"
+      background-color="#3b4a5a"
+      text-color="#fff"
+      active-text-color="#4caf50"
+    >
+      <el-menu-item
+        v-for="session in sessions"
+        :key="session.id"
+        :index="session.id"
+        @click="selectSession(session.id)"
+        class="session-item"
+      >
+        {{ session.name }}
+        <el-button
+          v-if="session.id > 6"
+          icon="Delete"
+          class="delete-icon"
+          type="text"
+          @click.stop="deleteSession(session.id)"
+          v-show="activeSessionId === session.id"
         >
-          {{ session.name }}
-          <span
-            v-if="session.id > 6"
-            class="delete-icon"
-            @click="deleteSession(session.id, $event)"
-          >
-            <i class="fa-solid fa-trash-can"></i>
-          </span>
-        </li>
-      </ul>
-    </div>
+        </el-button>
+      </el-menu-item>
+    </el-menu>
   </div>
 </template>
 
@@ -41,23 +48,16 @@ export default {
     activeSessionId: Number
   },
   data() {
-    return {
-      hover: false,
-      isCollapsed: false // 默认为展开状态
-    }
+    return {}
   },
   methods: {
-    toggleSidebar() {
-      this.isCollapsed = !this.isCollapsed
-    },
     selectSession(sessionId) {
       this.$emit('set-active-session', sessionId)
     },
     addSession() {
       this.$emit('add-new-session')
     },
-    deleteSession(sessionId, event) {
-      event.stopPropagation()
+    deleteSession(sessionId) {
       if (window.confirm('确定要删除这个会话吗？')) {
         this.$emit('delete-session', sessionId)
       }
@@ -68,7 +68,7 @@ export default {
 
 <style scoped>
 .sidebar-container {
-  position: relative; /* 确保子元素的绝对定位以此为参照 */
+  position: relative;
   background-color: #3b4a5a;
 }
 .sidebar-container:hover .toggle-icon {
@@ -76,36 +76,16 @@ export default {
 }
 
 .active {
-  outline: 2px solid #2c3e50; /* 选中项的样式 */
+  outline: 2px solid #2c3e50;
 }
 
-.toggle-icon {
-  position: absolute; /* 定位到sidebar的左侧 */
-  top: 50%; /* 调整到适当位置 */
-  left: 500; /* 当sidebar折叠时显示在侧边栏外侧 */
-  z-index: 100; /* 确保图标在侧边栏之上 */
-  width: 30px; /* 图标区域大小，确保有足够点击区域 */
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: white; /* 图标颜色 */
-  opacity: 0.2;
-  transition: opacity 0.3s;
-}
-.sidebar.is-collapsed + .toggle-icon {
-  left: 0; /* 当sidebar展开时不显示图标 */
-}
-.sidebar {
+.el-menu {
   width: 300px;
   background-color: #3b4a5a;
   color: white;
   transition: width 0.3s;
   overflow-x: hidden;
-}
-.is-collapsed {
-  width: 0; /* 收起时宽度为0 */
+  border-right: none;
 }
 .session-list {
   background-color: #2c3e50;
@@ -121,43 +101,68 @@ export default {
     box-shadow 0.3s;
 }
 .session-list li:hover {
-  background-color: #34495e; /* 鼠标悬停时的背景色 */
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* 添加轮廓阴影效果 */
+  background-color: #34495e;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
-/* 设置选中会话的样式 */
 .session-list li.active {
-  background-color: #34495e; /* 选中项的背景颜色 */
-  color: white; /* 选中项的文字颜色 */
+  background-color: #34495e;
+  color: white;
   border-left: 4px solid #4caf50;
   padding-left: 16px;
+}
+
+.session-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border: none;
+}
+
+.session-item:hover .delete-icon,
+.session-item.active .delete-icon {
+  display: block;
+}
+
+.el-menu-item.is-active {
+  border-left: 4px solid #409eff;
+  background-color: #334455;
+  color: white;
+}
+
+.el-menu-item:hover {
+  background-color: #2c3e50;
 }
 
 .add-session {
   padding: 10px;
   margin-left: 43%;
-  background-color: transparent; /* 使按钮透明 */
+  background-color: transparent;
   border: none;
   cursor: pointer;
-  color: #fff; /* 或其他颜色 */
+  color: #fff;
 }
 
 .add-session:hover {
-  color: #3ce767; /* 鼠标悬停时的颜色 */
+  color: #3ce767;
 }
 
 .delete-icon {
+  display: none;
   cursor: pointer;
-  margin-left: 10px;
-  opacity: 0;
+  margin-left: auto;
   transition: opacity 0.3s ease;
+  background-color: transparent;
 }
 
-/* 确保图标对齐 */
+.delete-icon:hover {
+  color: brown;
+}
+
 .session-list li {
   display: flex;
-  align-items: center; /* 垂直居中 */
-  justify-content: space-between; /* 左侧会话名称和右侧删除图标分布在两侧 */
+  align-items: center;
+  justify-content: space-between;
 }
 
 .session-list li:hover .delete-icon {

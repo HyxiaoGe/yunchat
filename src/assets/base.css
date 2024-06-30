@@ -50,6 +50,28 @@
   }
 }
 
+/* 全局样式文件 styles.css 或组件内部的 <style> 区块 */
+@media (max-width: 768px) {
+  .el-button {
+    padding: 8px 10px;
+    font-size: 14px;
+  }
+
+  .el-input__inner {
+    padding: 8px 10px;
+  }
+
+  .el-row {
+    margin-bottom: 10px;
+    /* 增加行间距 */
+  }
+
+  .el-col {
+    padding: 5px;
+    /* 调整列的内边距 */
+  }
+}
+
 *,
 *::before,
 *::after {

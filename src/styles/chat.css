@@ -15,7 +15,6 @@
 
 .greeting {
     margin: 450px auto 0 auto;
-    /* 上：450px，右：自动，下：0，左：自动 */
     color: #fff;
     font-size: 30px;
 }
@@ -41,16 +40,12 @@
 
 .code-block {
     background: #282c34;
-    /* 暗色背景，代码消息 */
     color: #abb2bf;
-    /* 浅灰色文本，代码消息 */
     padding: 10px;
     border-radius: 5px;
     margin: 5px 0;
-    /* 上下边距 */
     font-family: 'Consolas', 'Monaco', 'Andale Mono', 'Ubuntu Mono', monospace;
     overflow-x: auto;
-    /* 如果代码很长，需要滚动 */
 }
 
 .fa-user,
@@ -91,11 +86,8 @@
     color: #cccccc;
     font-size: 0.75rem;
     text-align: right;
-    /* 时间戳右对齐 */
     padding-right: 15px;
-    /* 与消息文本右侧对齐，根据需要调整 */
     margin-top: 2px;
-    /* 时间戳与消息文本的间距，根据需要调整 */
 }
 
 .input-area {
@@ -105,94 +97,78 @@
     padding-bottom: 20px;
 }
 
-.input-area textarea {
-    width: 750px;
+.message-textarea {
+    outline: none;
+    width: 100%;
     min-height: 50px;
-    max-height: 220px;
-    margin-right: 10px;
+    max-height: 200px;
     padding: 10px;
     border: 1px solid #ccc;
     border-radius: 4px;
     background: #fff;
-    resize: none;
     overflow-y: auto;
+    resize: none;
+    border-color: #ccc;
+    box-shadow: none;
 }
 
 .input-area button.send-button {
+    margin-left: 15px;
     padding: 10px;
     background-color: transparent;
-    /* 使按钮透明 */
     border: none;
     cursor: pointer;
 }
 
+.input-area button.send-button:hover {
+    color:#28a745
+}
+
 .input-area button:disabled {
     background-color: #ccc;
-    /* 置灰的按钮背景色 */
     cursor: not-allowed;
-    /* 鼠标悬停时显示禁用的标志 */
 }
 
 .input-area button.clear-conversation {
     padding: 10px;
     background-color: transparent;
-    /* 使按钮透明 */
     border: none;
     cursor: pointer;
     color: #fff;
-    /* 或其他颜色 */
 }
 
 .input-area button.clear-conversation:hover {
     color: #e74c3c;
-    /* 鼠标悬停时的颜色 */
 }
 
 .input-area .fa-paper-plane {
     color: #28a745;
-    /* 图标颜色 */
     font-size: 24px;
-    /* 图标大小 */
 }
 
 .input-area button.button-disabled {
     background-color: #ccc;
-    /* 置灰的按钮背景色 */
     cursor: not-allowed;
-    /* 鼠标悬停时显示禁用的标志 */
 }
 
 .scroll-to-bottom {
     position: fixed;
     right: 2em;
-    /* 距离右侧2em */
     bottom: 2em;
-    /* 距离底部2em */
-    background-color: #28a745;
-    /* 按钮背景颜色 */
+    background-color: transparent;
     color: white;
-    /* 图标颜色 */
     border: none;
-    /* 无边框 */
     border-radius: 50%;
-    /* 圆形按钮 */
     padding: 0.5em;
-    /* 内边距 */
     cursor: pointer;
-    /* 鼠标样式 */
     display: flex;
-    /* 使用flex布局，方便居中图标 */
     justify-content: center;
-    /* 水平居中图标 */
     align-items: center;
-    /* 垂直居中图标 */
     z-index: 100;
-    /* 确保按钮位于消息列表上方 */
 }
 
-.scroll-to-bottom i {
-    font-size: 1.5em;
-    /* 图标大小 */
+.scroll-to-bottom:hover {
+    color: #28a745;
 }
 
 .verification-area {
@@ -203,14 +179,11 @@
     left: 50%;
     transform: translate(0%, 1250%);
     margin-bottom: 20px;
-    /* 与消息区域的间距 */
 }
 
 .verification-area input {
     width: 20%;
-    /* 输入框宽度 */
     margin-right: 10px;
-    /* 输入框和按钮之间的间距 */
     padding: 10px;
     border: 1px solid #ccc;
     border-radius: 4px;
@@ -221,34 +194,23 @@
     padding: 10px 15px;
     border-radius: 4px;
     background-color: #28a745;
-    /* 按钮背景颜色 */
     color: white;
     border: none;
     cursor: pointer;
     transition: background-color 0.3s ease;
-    /* 添加过渡效果 */
 }
 
 .verification-area button:hover {
     background-color: #1f7a2d;
-    /* 鼠标悬停时的背景色 */
 }
 
 .file-upload-icon {
-cursor: pointer;
-    margin-right: 10px;
-    font-size: 24px;
-    color: #4CAF50;
-    background-color: #f0f0f0;
-    border-radius: 50%;
-    padding: 5px;
-    /* 增加填充，使背景更圆 */
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    /* 添加阴影效果 */
-    transition: background-color 0.3s, color 0.3s;
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    color: #fff;
 }
 
 .file-upload-icon:hover {
-    background-color: #5a5a5a;
-    color: #ffffff;
+    color:#007bff;
 }

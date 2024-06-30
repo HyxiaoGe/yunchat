@@ -361,8 +361,8 @@ export default {
         您好！有什么可以帮助你的吗？
       </div>
       <div v-if="!isVerified" class="verification-area">
-        <input v-model="verificationKey" placeholder="请输入密钥进行验证" />
-        <button @click="verifyKey">验证</button>
+        <el-input v-model="verificationKey" placeholder="请输入密钥进行验证"></el-input>
+        <el-button type="primary" @click="verifyKey">验证</el-button>
       </div>
       <div class="messages" ref="messagesContainer">
         <div v-for="(msg, index) in conversation" :key="index" :class="['message', msg.role]">
@@ -377,32 +377,52 @@ export default {
           <div v-else class="text" v-html="renderMarkdown(msg.content)"></div>
           <div class="timestamp" v-if="msg.role === 'user'">{{ formatTime(msg.time) }}</div>
         </div>
-        <button v-show="showScrollButton" @click="scrollToBottom" class="scroll-to-bottom">
-          <i class="fas fa-arrow-down"></i>
-        </button>
+        <el-button
+          type="primary"
+          v-show="showScrollButton"
+          class="scroll-to-bottom"
+          style="font-size: 24px"
+          icon="Bottom"
+          @click="scrollToBottom"
+        />
       </div>
       <div v-if="isVerified">
         <div class="input-area">
-          <button class="file-upload-icon" @click="triggerFileUpload">
-            <i class="fa-solid fa-upload"></i>
-          </button>
+          <el-tooltip content="上传文件" placement="top">
+            <el-button
+              type="primary"
+              class="file-upload-icon"
+              style="font-size: 24px"
+              icon="UploadFilled"
+              @click="triggerFileUpload"
+            />
+          </el-tooltip>
           <input type="file" ref="fileInput" @change="handleFileUpload" style="display: none" />
-          <textarea
-            type="text"
+          <el-input
+            type="textarea"
+            class="message-textarea"
             v-model="userMessage"
             placeholder="请输入文本"
-            @keyup.enter.exact="sendMessage"
-          ></textarea>
-          <button
-            :disabled="!userMessage.trim() && !uploadedFile"
+            style="width: 40%"
+            autosize
+          />
+          <el-button
+            type="success"
+            icon="Promotion"
             @click="sendMessage"
             class="send-button"
-          >
-            <i class="fas fa-paper-plane"></i>
-          </button>
-          <button @click="clearConversation" class="clear-conversation">
-            <i class="fas fa-eraser"></i> 清空上下文
-          </button>
+            style="font-size: 24px"
+            :disabled="!userMessage.trim() && !uploadedFile"
+          />
+          <el-tooltip content="清空上下文" placement="top">
+            <el-button
+              style="font-size: 24px"
+              type="primary"
+              class="clear-conversation"
+              icon="Delete"
+              @click="clearConversation"
+            />
+          </el-tooltip>
         </div>
       </div>
     </div>
