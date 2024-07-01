@@ -29,15 +29,17 @@ export default {
       ],
       activeSessionId: 1,
       uploadedFile: null,
-      base64Url: null
+      base64Url: null,
+      messageQueues: {},  // 每个会话的消息队列
     }
   },
   created() {
-    // WebSocketService.initializeWebSocket('ws://localhost:8808/ws')
-    WebSocketService.initializeWebSocket(`ws://${process.env.VITE_APP_END_POINT}/ws`)
+    WebSocketService.initializeWebSocket('ws://localhost:8808/ws')
+    // WebSocketService.initializeWebSocket(`ws://${process.env.VITE_APP_END_POINT}/ws`)
     WebSocketService.registerMessageHandler(this.handleWebSocketMessage)
     this.isVerified = SessionService.get('isVerified') === 'true'
     this.loadActiveSession()
+    this.initializeQueues()
     this.loadSessionsFromLocalStorage()
     this.scrollToBottom()
   },
@@ -48,6 +50,14 @@ export default {
         this.sessions = JSON.parse(savedSessions)
       }
       this.loadActiveSessionMessages()
+    },
+    initializeQueues(){
+      this.sessions.forEach(session => {
+        this.initMessageQueueForSession(session.id);
+      });
+    },
+    initMessageQueueForSession(sessionId) {
+      this.messageQueues[sessionId] = [];
     },
     onScroll() {
       const messagesContainer = this.$refs.messagesContainer
@@ -154,24 +164,39 @@ export default {
       if (!this.isVerified) {
         return
       }
-      const oldActiveSessionId =  this.activeSessionId
-      // 保存当前会话的消息到sessions
-      const currentSession = SessionService.findSessionById(this.sessions, oldActiveSessionId)
-      if (currentSession) {
-        currentSession.messages = [...this.conversation]
+      // 保存上一个会话的消息到sessions
+      const previousSession = SessionService.findSessionById(this.sessions, this.activeSessionId)
+      if (previousSession) {
+        previousSession.messages = [...this.conversation]
+        SessionService.save(this.sessions)
       }
-      // 更新活动会话ID
+      // 更新当前会话为活跃会话
       this.activeSessionId = sessionId
       localStorage.setItem('activeSessionId', sessionId.toString())
 
-      // 加载新会话的消息
-      const newActiveSession = this.sessions.find((session) => session.id === sessionId)
-      if (newActiveSession) {
-        this.conversation = [...newActiveSession.messages]
+      // 加载当前会话的消息
+      const currentSession = this.sessions.find((session) => session.id === sessionId)
+      if (currentSession) {
+        this.conversation = [...currentSession.messages]
+        //  将之前的消息继续生成完毕
+        if (this.messageQueues[sessionId]) {
+          this.messageQueues[sessionId].forEach(message => {
+            this.updateConversation(sessionId, message)
+        })
+          this.messageQueues[sessionId] = []
+        }
       } else {
         this.conversation = []
       }
-      SessionService.save(this.sessions)
+      
+
+      if (this.messageQueues[sessionId]) {
+        this.messageQueues[sessionId].forEach(message => {
+          this.updateConversation(sessionId, message)
+        })
+        this.messageQueues[sessionId] = []
+      }
+
     },
     saveCurrentSessionMessages() {
       // 找到当前活动会话，并保存消息
@@ -192,6 +217,7 @@ export default {
       // 直接创建一个新会话，不需要复制当前对话内容
       const newSession = SessionService.create(sessionId)
       this.sessions.push(newSession)
+      this.initMessageQueueForSession(sessionId);
       SessionService.save(this.sessions)
     },
     loadActiveSessionMessages() {
@@ -233,53 +259,42 @@ export default {
         this.verificationKey = ''
         return
       }
-      if (message.sessionId === this.activeSessionId) {
-        const targetSession = this.sessions.find((session) => session.id === message.sessionId)
-        this.updateConversation(targetSession, message.content)
+      //  将消息添加到对应会话的队列中
+      if (this.messageQueues[message.sessionId]) {
+        this.messageQueues[message.sessionId].push(message.content)
+        if (message.sessionId === this.activeSessionId) {
+        this.updateConversation(message.sessionId, message.content)
+        }
       }
     },
-    updateConversation(session, data){
-      if (data === '[DONE]') {
-        if (session) {
-          session.messages = [...this.conversation]
-          SessionService.save(this.sessions)
-        }
-        this.currentAssistantMessage = ''
-        return
-      } else {
-        // 实时更新累积的消息
-        this.currentAssistantMessage += data
-        // 然后更新到对话中以实时渲染
-        // 检查对话数组中最后一条消息是否属于助手且未完成
-        if (
-          this.conversation.length > 0 &&
-          this.conversation[this.conversation.length - 1].role === 'assistant' &&
-          !this.conversation[this.conversation.length - 1].done
-        ) {
-          // 更新最后一条消息的文本
-          this.conversation[this.conversation.length - 1].content = JSON.stringify([
-            {
-              type: 'text',
-              text: this.currentAssistantMessage
-            }
-          ])
+    updateConversation(sessionId, data){
+      const activeSession = this.sessions.find(session => session.id === sessionId);
+      if (activeSession) {
+        if (data === '[DONE]') {
+          this.currentAssistantMessage = '' 
         } else {
-          // 否则，添加一个新的消息条目
-          this.conversation.push({
-            content: JSON.stringify([
-              {
-                type: 'text',
-                text: this.currentAssistantMessage
-              }
-            ]),
-            role: 'assistant',
-            done: false
-          })
+          // 实时更新累积的消息
+          this.currentAssistantMessage += data
+          // 然后更新到对话中以实时渲染
+          // 检查对话数组中最后一条消息是否属于助手且未完成
+          if (this.conversation.length > 0 && this.conversation[this.conversation.length - 1].role === 'assistant' && !this.conversation[this.conversation.length - 1].done) {
+            // 更新最后一条消息的文本
+            this.conversation[this.conversation.length - 1].content = JSON.stringify([{type: 'text', text: this.currentAssistantMessage}])
+          } else {
+            // 否则，添加一个新的消息条目
+            this.conversation.push({
+              content: JSON.stringify([{type: 'text', text: this.currentAssistantMessage}]),
+              role: 'assistant',
+              done: false
+            });
+          }
+        }
+        if (sessionId === this.activeSessionId) {
+          // 由于数组中对象的属性发生了变化，确保更新视图
+          this.conversation = [...this.conversation]
+          this.scrollToBottom()
         }
       }
-      // 由于数组中对象的属性发生了变化，确保更新视图
-      this.conversation = [...this.conversation]
-      this.scrollToBottom()
     },
     verifyKey() {
       if (this.verificationKey === '') {
