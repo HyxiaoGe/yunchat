@@ -34,8 +34,8 @@ export default {
     }
   },
   created() {
-    WebSocketService.initializeWebSocket('ws://localhost:8808/ws')
-    // WebSocketService.initializeWebSocket(`ws://${process.env.VITE_APP_END_POINT}/ws`)
+    // WebSocketService.initializeWebSocket('ws://localhost:8808/ws')
+    WebSocketService.initializeWebSocket(`ws://${process.env.VITE_APP_END_POINT}/ws`)
     WebSocketService.registerMessageHandler(this.handleWebSocketMessage)
     this.isVerified = SessionService.get('isVerified') === 'true'
     this.loadActiveSession()
