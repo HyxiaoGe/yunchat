@@ -392,14 +392,11 @@ export default {
       </div>
       <div class="messages" ref="messagesContainer">
         <div v-for="(msg, index) in conversation" :key="index" :class="['message', msg.role]">
-          <i
-            :class="['icon', msg.role === 'user' ? 'fa-solid fa-user-tie' : 'fa-solid fa-robot']"
-          ></i>
+          <i :class="['icon', msg.role === 'user' ? 'fa-solid fa-user-tie' : 'fa-solid fa-robot']"></i>
           <div
             v-if="isCodeBlock(msg.content)"
             class="code-block"
-            v-html="renderMarkdown(msg.content)"
-          ></div>
+            v-html="renderMarkdown(msg.content)"></div>
           <div v-else class="text" v-html="renderMarkdown(msg.content)"></div>
           <div class="timestamp" v-if="msg.role === 'user'">{{ formatTime(msg.time) }}</div>
         </div>
@@ -409,8 +406,7 @@ export default {
           class="scroll-to-bottom"
           style="font-size: 24px"
           icon="Bottom"
-          @click="scrollToBottom"
-        />
+          @click="scrollToBottom"/>
       </div>
       <div v-if="isVerified">
         <div class="input-area">
@@ -420,8 +416,7 @@ export default {
               class="file-upload-icon"
               style="font-size: 24px"
               icon="UploadFilled"
-              @click="triggerFileUpload"
-            />
+              @click="triggerFileUpload"/>
           </el-tooltip>
           <input type="file" ref="fileInput" @change="handleFileUpload" style="display: none" />
           <el-input
@@ -430,24 +425,21 @@ export default {
             v-model="userMessage"
             placeholder="请输入文本"
             style="width: 40%"
-            autosize
-          />
+            autosize/>
           <el-button
             type="success"
             icon="Promotion"
             @click="sendMessage"
             class="send-button"
             style="font-size: 24px"
-            :disabled="!userMessage.trim() && !uploadedFile"
-          />
+            :disabled="!userMessage.trim() && !uploadedFile"/>
           <el-tooltip content="清空上下文" placement="top">
             <el-button
               style="font-size: 24px"
               type="primary"
               class="clear-conversation"
               icon="Delete"
-              @click="clearConversation"
-            />
+              @click="clearConversation"/>
           </el-tooltip>
         </div>
       </div>

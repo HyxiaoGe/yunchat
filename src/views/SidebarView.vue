@@ -5,34 +5,28 @@
         icon="CirclePlusFilled"
         style="font-size: 24px"
         class="add-session"
-        @click="addSession"
-      />
+        @click="addSession"/>
     </el-tooltip>
     <el-menu
       class="el-menu"
-      :collapse="isCollapsed"
-      :default-active="activeSessionId"
+      default-active="activeSessionId"
       background-color="#3b4a5a"
       text-color="#fff"
-      active-text-color="#4caf50"
-    >
+      active-text-color="#4caf50">
       <el-menu-item
         v-for="session in sessions"
         :key="session.id"
-        :index="session.id"
+        index="session.id"
         @click="selectSession(session.id)"
-        class="session-item"
-      >
-        {{ session.name }}
+        class="session-item">
+          {{ session.name }}
         <el-button
           v-if="session.id > 6"
           icon="Delete"
           class="delete-icon"
           type="text"
           @click.stop="deleteSession(session.id)"
-          v-show="activeSessionId === session.id"
-        >
-        </el-button>
+          v-show="activeSessionId === session.id"/>
       </el-menu-item>
     </el-menu>
   </div>
