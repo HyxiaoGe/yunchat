@@ -111,7 +111,6 @@ export default {
         ) {
           activeSession.name = trimmedMessage.substring(0, 20)
         }
-
         // 保存用户发送的消息
         this.conversation.push({
           content: JSON.stringify([
@@ -291,7 +290,8 @@ export default {
         }
         if (sessionId === this.activeSessionId) {
           // 由于数组中对象的属性发生了变化，确保更新视图
-          this.conversation = [...this.conversation]
+          activeSession.messages = [...this.conversation]
+          SessionService.save(this.sessions)
           this.scrollToBottom()
         }
       }
