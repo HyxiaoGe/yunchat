@@ -117,6 +117,7 @@ export default {
         //  对话上下文只支持最近5次对话(固定首Prompt)
         const firstPrompt = this.conversation[0]
         const message = {
+          sessionId: activeSession.id,
           action: 'session',
           file: null,
           conversation: [firstPrompt].concat(
@@ -153,12 +154,12 @@ export default {
       if (!this.isVerified) {
         return
       }
+      const oldActiveSessionId =  this.activeSessionId
       // 保存当前会话的消息到sessions
-      const currentSession = SessionService.findSessionById(this.sessions, this.activeSessionId)
+      const currentSession = SessionService.findSessionById(this.sessions, oldActiveSessionId)
       if (currentSession) {
         currentSession.messages = [...this.conversation]
       }
-
       // 更新活动会话ID
       this.activeSessionId = sessionId
       localStorage.setItem('activeSessionId', sessionId.toString())
@@ -170,7 +171,6 @@ export default {
       } else {
         this.conversation = []
       }
-
       SessionService.save(this.sessions)
     },
     saveCurrentSessionMessages() {
@@ -223,57 +223,63 @@ export default {
       }
     },
     handleWebSocketMessage(data) {
-      if (data === 'success') {
+      const message = JSON.parse(data)
+      if (message.content === 'success') {
         localStorage.setItem('isVerified', 'true')
         this.isVerified = true
-      } else if (data === 'failure') {
+        return
+      } else if (message.content === 'failure') {
         alert('密钥错误，请重新输入！！！')
         this.verificationKey = ''
+        return
+      }
+      if (message.sessionId === this.activeSessionId) {
+        const targetSession = this.sessions.find((session) => session.id === message.sessionId)
+        this.updateConversation(targetSession, message.content)
+      }
+    },
+    updateConversation(session, data){
+      if (data === '[DONE]') {
+        if (session) {
+          session.messages = [...this.conversation]
+          SessionService.save(this.sessions)
+        }
+        this.currentAssistantMessage = ''
+        return
       } else {
-        if (data === '[DONE]') {
-          // 重置累积的消息
-          const activeSession = this.sessions.find((session) => session.id === this.activeSessionId)
-          if (activeSession) {
-            activeSession.messages = [...this.conversation]
-            SessionService.save(this.sessions)
-          }
-          this.currentAssistantMessage = ''
-          return
+        // 实时更新累积的消息
+        this.currentAssistantMessage += data
+        // 然后更新到对话中以实时渲染
+        // 检查对话数组中最后一条消息是否属于助手且未完成
+        if (
+          this.conversation.length > 0 &&
+          this.conversation[this.conversation.length - 1].role === 'assistant' &&
+          !this.conversation[this.conversation.length - 1].done
+        ) {
+          // 更新最后一条消息的文本
+          this.conversation[this.conversation.length - 1].content = JSON.stringify([
+            {
+              type: 'text',
+              text: this.currentAssistantMessage
+            }
+          ])
         } else {
-          // 实时更新累积的消息
-          this.currentAssistantMessage += data
-          // 然后更新到对话中以实时渲染
-          // 检查对话数组中最后一条消息是否属于助手且未完成
-          if (
-            this.conversation.length > 0 &&
-            this.conversation[this.conversation.length - 1].role === 'assistant' &&
-            !this.conversation[this.conversation.length - 1].done
-          ) {
-            // 更新最后一条消息的文本
-            this.conversation[this.conversation.length - 1].content = JSON.stringify([
+          // 否则，添加一个新的消息条目
+          this.conversation.push({
+            content: JSON.stringify([
               {
                 type: 'text',
                 text: this.currentAssistantMessage
               }
-            ])
-          } else {
-            // 否则，添加一个新的消息条目
-            this.conversation.push({
-              content: JSON.stringify([
-                {
-                  type: 'text',
-                  text: this.currentAssistantMessage
-                }
-              ]),
-              role: 'assistant',
-              done: false
-            })
-          }
+            ]),
+            role: 'assistant',
+            done: false
+          })
         }
-        // 由于数组中对象的属性发生了变化，确保更新视图
-        this.conversation = [...this.conversation]
-        this.scrollToBottom()
       }
+      // 由于数组中对象的属性发生了变化，确保更新视图
+      this.conversation = [...this.conversation]
+      this.scrollToBottom()
     },
     verifyKey() {
       if (this.verificationKey === '') {

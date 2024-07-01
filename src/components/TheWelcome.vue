@@ -72,7 +72,7 @@
               />
             </el-tooltip>
           </router-link>
-          <router-link to="/video" custom v-slot="{ navigate }">
+          <router-link to="/" custom v-slot="{ navigate }">
             <el-tooltip content="开发中..." placement="top">
               <el-button
                 class="morefill-button"
