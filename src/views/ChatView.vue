@@ -169,6 +169,10 @@ export default {
         previousSession.messages = [...this.conversation]
         SessionService.save(this.sessions)
       }
+
+      // 重置累积消息
+      this.currentAssistantMessage = '';
+
       // 更新当前会话为活跃会话
       this.activeSessionId = sessionId
       localStorage.setItem('activeSessionId', sessionId.toString())
@@ -272,10 +276,11 @@ export default {
         if (data === '[DONE]') {
           this.currentAssistantMessage = '' 
         } else {
-          // 实时更新累积的消息
-          this.currentAssistantMessage += data
-          // 然后更新到对话中以实时渲染
-          // 检查对话数组中最后一条消息是否属于助手且未完成
+          // 实时更新累积的消息，且只更新当前活动会话的累积消息
+          if (sessionId === this.activeSessionId) {
+            this.currentAssistantMessage += data;
+          }
+          // 然后更新到对话中以实时渲染，检查对话数组中最后一条消息是否属于助手且未完成
           if (this.conversation.length > 0 && this.conversation[this.conversation.length - 1].role === 'assistant' && !this.conversation[this.conversation.length - 1].done) {
             // 更新最后一条消息的文本
             this.conversation[this.conversation.length - 1].content = JSON.stringify([{type: 'text', text: this.currentAssistantMessage}])
