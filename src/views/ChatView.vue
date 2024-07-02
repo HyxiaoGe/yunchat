@@ -30,7 +30,10 @@ export default {
       activeSessionId: 1,
       uploadedFile: null,
       base64Url: null,
-      messageQueues: {},  // 每个会话的消息队列
+      messageQueues: {},
+      dialogImageUrl: '',
+      dialogVisible: false,
+      fileList: []
     }
   },
   created() {
@@ -319,37 +322,32 @@ export default {
       //  格式化时间戳
       return date.toLocaleTimeString()
     },
-    triggerFileUpload() {
-      this.$refs.fileInput.click()
+    handleFileUpload(file, fileList) {
+      const isJPG = file.raw.type === 'image/jpeg';
+      const isPNG = file.raw.type === 'image/png';
+      const isLt256KB = file.raw.size / 1024 < 256; // 文件大小限制为256KB
+
+      if (!isJPG && !isPNG) {
+        this.$message.error('上传图片只能是 JPG/PNG 格式!');
+        // 移除不符合条件的文件
+        this.fileList = fileList.slice(0, fileList.length - 1);
+        return false;
+      }
+      if (!isLt256KB) {
+        this.$message.error('上传图片大小不能超过 256KB!');
+        // 移除不符合条件的文件
+        this.fileList = fileList.slice(0, fileList.length - 1);
+        return false;
+      }
+
+      // 更新文件列表
+      this.fileList = fileList;
     },
-    handleFileUpload(event) {
-      const file = event.target.files[0]
-      if (file) {
-        console.log('File selected: ', file)
-        this.uploadedFile = file
-        this.checkFile()
-      }
+    handleUploadSuccess(response, file, fileList) {
+      console.log('上传成功', response, file, fileList);
     },
-    checkFile() {
-      const maxFileSize = 262144
-      const allowedTypes = [
-        'image/jpeg',
-        'image/png',
-        'text/plain',
-        'application/pdf',
-        'text/csv',
-        'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-      ]
-      if (this.uploadedFile) {
-        if (this.uploadedFile.size > maxFileSize) {
-          alert('文件太大, 文件大小不能超过256KB!')
-          return
-        }
-      }
-      if (!allowedTypes.includes(this.uploadedFile.type)) {
-        alert('不支持的文件类型。请重新上传。')
-      }
+    handleUploadError(error, file, fileList) {
+      console.error('上传失败', error, file, fileList);
     },
     generateSessionId() {
       const currentTimestampInMs = Date.now()
@@ -411,14 +409,20 @@ export default {
       <div v-if="isVerified">
         <div class="input-area">
           <el-tooltip content="上传文件" placement="top">
-            <el-button
-              type="primary"
-              class="file-upload-icon"
-              style="font-size: 24px"
-              icon="UploadFilled"
-              @click="triggerFileUpload"/>
+              <el-upload
+                class="upload-file"
+                action="/"  
+                :on-change="handleFileUpload"
+                :on-success="handleUploadSuccess"
+                :on-error="handleUploadError"
+                :file-list="fileList"
+                list-type="picture"
+                :auto-upload="false">
+                <template #trigger>
+                  <el-button class="file-upload-icon" style="font-size: 24px" icon="UploadFilled" type="primary"></el-button>
+                </template>
+              </el-upload>
           </el-tooltip>
-          <input type="file" ref="fileInput" @change="handleFileUpload" style="display: none" />
           <el-input
             type="textarea"
             class="message-textarea"
