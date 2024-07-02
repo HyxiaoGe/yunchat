@@ -9,14 +9,14 @@
     </el-tooltip>
     <el-menu
       class="el-menu"
-      default-active="activeSessionId"
+      :default-active=activeSessionId.toString()
       background-color="#3b4a5a"
       text-color="#fff"
       active-text-color="#4caf50">
       <el-menu-item
         v-for="session in sessions"
-        :key="session.id"
-        index="session.id"
+        :key=session.id
+        :index=session.id.toString()
         @click="selectSession(session.id)"
         class="session-item">
           {{ session.name }}
